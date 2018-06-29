@@ -39,14 +39,31 @@ import * as backend_util from './backend_util';
 export class MathBackendCPU implements KernelBackend {
   private data = new WeakMap<DataId, DataTypeMap[DataType]>();
   private canvas: HTMLCanvasElement;
+  private firstUse = true;
 
   constructor() {
-    if (typeof document !== 'undefined') {
+    if (ENV.get('IS_BROWSER')) {
       this.canvas = document.createElement('canvas');
     }
   }
 
   register(dataId: DataId, shape: number[], dtype: DataType): void {
+    if (this.firstUse) {
+      this.firstUse = false;
+      if (ENV.get('IS_NODE')) {
+        console.warn(
+            '\n============================\n' +
+            'Hi there 👋. Looks like you are running TensorFlow.js in ' +
+            'Node.js. To speed things up dramatically, install our node ' +
+            'backend, which binds to TensorFlow C++, by running ' +
+            'npm i @tensorflow/tfjs-node, ' +
+            'or npm i @tensorflow/tfjs-node-gpu if you have CUDA. ' +
+            'Then call require(\'tensorflow/tfjs-node\'); (-gpu ' +
+            'suffix for CUDA) at the start of your program. ' +
+            'Visit https://github.com/tensorflow/tfjs-node for more details.' +
+            '\n============================\n');
+      }
+    }
     if (this.data.has(dataId)) {
       throw new Error(`Data buffer is already registered`);
     }
@@ -284,16 +301,15 @@ export class MathBackendCPU implements KernelBackend {
                (aValue, bValue) => aValue * bValue) as Tensor;
   }
 
-  divide(a: Tensor, b: Tensor): Tensor {
-    let op: (a: number, b: number) => number;
-    let outputDtype: 'float32'|'int32';
-    if (a.dtype === 'int32' && b.dtype === 'int32') {
-      outputDtype = 'int32';
-      op = (a: number, b: number) => Math.floor(a / b);
-    } else {
-      outputDtype = 'float32';
-      op = (a: number, b: number) => a / b;
-    }
+  realDivide(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => a / b;
+    const outputDtype = 'float32';
+    return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
+  }
+
+  floorDiv(a: Tensor, b: Tensor): Tensor {
+    const op = (a: number, b: number) => Math.floor(a / b);
+    const outputDtype = 'int32';
     return this.broadcastedBinaryOp(a, b, outputDtype, op) as Tensor;
   }
 
@@ -316,6 +332,27 @@ export class MathBackendCPU implements KernelBackend {
       vals[i] = sum;
     }
     return result;
+  }
+
+  unsortedSegmentSum<T extends Tensor>(
+      x: T, segmentIds: Tensor1D, numSegments: number): Tensor {
+    const res = [];
+
+    // Reshape the segment id's so that they can be broadcast with
+    // x. The new shape should be [segmentIds.shape, 1, ..., 1]
+    const numIters = x.rank - segmentIds.rank;
+    for (let i = 0; i < numIters; ++i) {
+      segmentIds = segmentIds.expandDims(i + 1);
+    }
+
+    for (let i = 0; i < numSegments; ++i) {
+      const segmentId = ops.scalar(i, 'int32');
+      const mask = ops.equal(segmentId, segmentIds).asType('float32');
+      const sum = mask.mul(x).sum(0);
+      res.push(sum);
+    }
+
+    return ops.stack(res);
   }
 
   argMin(x: Tensor, axis: number): Tensor {
@@ -372,6 +409,11 @@ export class MathBackendCPU implements KernelBackend {
 
   cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean):
       Tensor {
+    if (axis !== x.rank - 1) {
+      throw new Error(
+          `backend.cumsum in CPU expects an inner-most axis=${x.rank - 1} ` +
+          `but got axis=${axis}`);
+    }
     const resultDtype = types.upcastType(x.dtype, 'int32');
     const result = ops.zeros(x.shape, resultDtype);
     const vals = result.dataSync();
@@ -518,7 +560,7 @@ export class MathBackendCPU implements KernelBackend {
     const aVals = x.dataSync();
     for (let i = 0; i < vals.length; ++i) {
       const offset = i * reduceSize;
-      let min = aVals[0];
+      let min = aVals[offset];
       for (let j = 0; j < reduceSize; ++j) {
         const value = aVals[offset + j];
         if (value < min) {
@@ -572,6 +614,27 @@ export class MathBackendCPU implements KernelBackend {
   maximum(a: Tensor, b: Tensor): Tensor {
     return this.broadcastedBinaryOp(
         a, b, a.dtype, (aVal, bVal) => Math.max(aVal, bVal));
+  }
+
+  all(x: Tensor, axes: number[]): Tensor {
+    axis_util.assertAxesAreInnerMostDims('all', axes, x.rank);
+    const [outShape, reduceShape] =
+        axis_util.computeOutAndReduceShapes(x.shape, axes);
+    const result = ops.zeros(outShape, x.dtype);
+    const reduceSize = util.sizeFromShape(reduceShape);
+    const vals = result.dataSync();
+
+    const aVals = x.dataSync();
+    for (let i = 0; i < vals.length; ++i) {
+      const offset = i * reduceSize;
+      let all = aVals[offset];
+      for (let j = 0; j < reduceSize; ++j) {
+        const value = aVals[offset + j];
+        all = all && value;
+      }
+      vals[i] = all;
+    }
+    return result;
   }
 
   squaredDifference(a: Tensor, b: Tensor): Tensor {
@@ -1188,6 +1251,115 @@ export class MathBackendCPU implements KernelBackend {
     return y.toTensor();
   }
 
+  depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const dx = ops.buffer<Rank.R4>(convInfo.inShape, 'float32');
+    const dxValues = dx.values;
+    const [dxS0, dxS1, dxS2] = dx.strides;
+    const dyValues = dy.dataSync();
+    const [dyS0, dyS1, dyS2] = dy.strides;
+    const fltValues = filter.dataSync();
+    const [fltS0, fltS1, fltS2] = filter.strides;
+    const {
+      batchSize,
+      filterHeight,
+      filterWidth,
+      inChannels,
+      inHeight,
+      inWidth,
+      outChannels,
+      outHeight,
+      outWidth,
+      strideHeight,
+      strideWidth
+    } = convInfo;
+    const topPad = filterHeight - 1 - convInfo.padInfo.top;
+    const leftPad = filterWidth - 1 - convInfo.padInfo.left;
+    const chMul = outChannels / inChannels;
+
+    for (let b = 0; b < batchSize; ++b) {
+      for (let d1 = 0; d1 < inChannels; ++d1) {
+        for (let xR = 0; xR < inHeight; ++xR) {
+          const xRCorner = xR - topPad;
+          const xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+          const yRMax =
+              Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
+
+          for (let xC = 0; xC < inWidth; ++xC) {
+            const xCCorner = xC - leftPad;
+            const xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+            const yCMax =
+                Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
+
+            let dotProd = 0;
+            for (let yR = xRMin; yR < yRMax; ++yR) {
+              const wR = yR * strideHeight - xRCorner;
+
+              for (let yC = xCMin; yC < yCMax; ++yC) {
+                const wC = yC * strideWidth - xCCorner;
+                const dyOffset = dyS0 * b + dyS1 * yR + dyS2 * yC;
+                const fltOffset = fltS0 * (filterHeight - 1 - wR) +
+                    fltS1 * (filterWidth - 1 - wC) + fltS2 * d1;
+
+                for (let dm = 0; dm < chMul; ++dm) {
+                  const d2 = d1 * chMul + dm;
+                  const pixel = dyValues[dyOffset + d2];
+                  const weight = fltValues[fltOffset + dm];
+                  dotProd += pixel * weight;
+                }
+              }
+            }
+            dxValues[dxS0 * b + dxS1 * xR + dxS2 * xC + d1] = dotProd;
+          }
+        }
+      }
+    }
+    return dx.toTensor();
+  }
+
+  depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo):
+      Tensor4D {
+    const strideHeight = convInfo.strideHeight;
+    const strideWidth = convInfo.strideWidth;
+    const filterHeight = convInfo.filterHeight;
+    const filterWidth = convInfo.filterWidth;
+    const dW = ops.buffer<Rank.R4>(convInfo.filterShape, 'float32');
+
+    const leftPad = convInfo.padInfo.left;
+    const topPad = convInfo.padInfo.top;
+    const chMul = convInfo.outChannels / convInfo.inChannels;
+
+    for (let wR = 0; wR < filterHeight; ++wR) {
+      const yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
+      const yRMax = Math.min(
+          convInfo.outHeight, (convInfo.inHeight + topPad - wR) / strideHeight);
+
+      for (let wC = 0; wC < filterWidth; ++wC) {
+        const yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
+        const yCMax = Math.min(
+            convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
+
+        for (let d2 = 0; d2 < convInfo.outChannels; ++d2) {
+          const d1 = Math.trunc(d2 / chMul);
+          const dm = d2 % chMul;
+
+          let dotProd = 0;
+          for (let b = 0; b < convInfo.batchSize; ++b) {
+            for (let yR = yRMin; yR < yRMax; ++yR) {
+              const xR = wR + yR * strideHeight - topPad;
+              for (let yC = yCMin; yC < yCMax; ++yC) {
+                const xC = wC + yC * strideWidth - leftPad;
+                dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
+              }
+            }
+          }
+          dW.set(dotProd, wR, wC, d1, dm);
+        }
+      }
+    }
+    return dW.toTensor();
+  }
+
   tile<T extends Tensor>(x: T, reps: number[]): T {
     const newShape: number[] = new Array(x.rank);
     for (let i = 0; i < newShape.length; i++) {
@@ -1735,9 +1907,11 @@ export class MathBackendCPU implements KernelBackend {
     res.fill(offValue);
 
     for (let event = 0; event < indices.size; ++event) {
-      res[event * depth + indices.get(event)] = onValue;
+      if (indices.get(event) >= 0 && indices.get(event) < depth) {
+        res[event * depth + indices.get(event)] = onValue;
+      }
     }
-    return ops.tensor2d(res, [indices.size, depth]);
+    return ops.tensor2d(res, [indices.size, depth], 'int32');
   }
 
   private broadcastedBinaryOp(

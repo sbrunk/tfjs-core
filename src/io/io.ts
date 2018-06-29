@@ -23,8 +23,8 @@ import './local_storage';
 
 import {browserFiles} from './browser_files';
 import {browserHTTPRequest} from './browser_http';
-import {decodeWeights, encodeWeights} from './io_utils';
-import {copyModel, listModels, moveModel, removeModel} from './model_management';
+import {concatenateArrayBuffers, decodeWeights, encodeWeights, getModelArtifactsInfoForJSON} from './io_utils';
+import {ModelManagement} from './model_management';
 import {IORouterRegistry} from './router_registry';
 
 import {IOHandler, LoadHandler, ModelArtifacts, ModelStoreManager, SaveConfig, SaveHandler, SaveResult, WeightsManifestConfig, WeightsManifestEntry} from './types';
@@ -36,13 +36,20 @@ const registerLoadRouter = IORouterRegistry.registerLoadRouter;
 const getSaveHandlers = IORouterRegistry.getSaveHandlers;
 const getLoadHandlers = IORouterRegistry.getLoadHandlers;
 
+const copyModel = ModelManagement.copyModel;
+const listModels = ModelManagement.listModels;
+const moveModel = ModelManagement.moveModel;
+const removeModel = ModelManagement.removeModel;
+
 export {
   browserFiles,
   browserHTTPRequest,
+  concatenateArrayBuffers,
   copyModel,
   decodeWeights,
   encodeWeights,
   getLoadHandlers,
+  getModelArtifactsInfoForJSON,
   getSaveHandlers,
   IOHandler,
   listModels,
