@@ -41,7 +41,8 @@ export declare class Engine implements TensorManager {
     private profiler;
     constructor(backend: KernelBackend, safeMode: boolean);
     runKernel<T extends Tensor, I extends NamedTensorMap>(forwardFunc: ForwardFunc<T>, inputs: I, backwardsFunc?: (dy: T, saved: Tensor[]) => {
-        [P in keyof I]: () => I[P];
+        // [P in keyof I]: () => I[P];
+        string: () => string;
     }): T;
     registerTensor(a: Tensor | Variable): void;
     registerVariable(v: Variable): void;
