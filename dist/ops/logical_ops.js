@@ -12,6 +12,7 @@ var types = require("../types");
 var util = require("../util");
 var broadcast_util = require("./broadcast_util");
 var operation_1 = require("./operation");
+var ops_1 = require("../ops/ops");
 var LogicalOps = (function () {
     function LogicalOps() {
     }
@@ -40,7 +41,7 @@ var LogicalOps = (function () {
     };
     LogicalOps.where = function (condition, a, b) {
         util.assertArgumentsAreTensors({ condition: condition, a: a, b: b }, 'where');
-        util.assert(condition.dtype === 'bool' || a.dtype === 'bool' || b.dtype === 'bool', 'Error Array must be of type bool.');
+        util.assert(condition.dtype === 'bool', 'Error Condition must be of type bool.');
         util.assertShapesMatch(a.shape, b.shape, 'Error in where: ');
         if (condition.rank === 1) {
             util.assert(condition.shape[0] === a.shape[0], 'The first dimension of `a` must match the size of `condition`.');
@@ -49,7 +50,12 @@ var LogicalOps = (function () {
             util.assertShapesMatch(condition.shape, b.shape, 'Error in where: ');
         }
         var dtype = types.upcastType(a.dtype, b.dtype);
-        return environment_1.ENV.engine.runKernel(function (backend) { return backend.where(condition, a, b, dtype); }, { condition: condition, a: a, b: b });
+        var grad = function (dy) { return ({
+            condition: function () { return ops_1.zerosLike(condition); },
+            a: function () { return dy.mul(condition.cast(a.dtype)); },
+            b: function () { return dy.mul(condition.logicalNot().cast(b.dtype)); }
+        }); };
+        return environment_1.ENV.engine.runKernel(function (backend) { return backend.where(condition, a, b, dtype); }, { condition: condition, a: a, b: b }, grad);
     };
     __decorate([
         doc_1.doc({ heading: 'Operations', subheading: 'Logical' }),

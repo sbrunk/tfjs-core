@@ -94,7 +94,7 @@ jasmine_util_1.describeWithFlags('IndexedDB', test_util_1.CPU_ENVS, function () 
                 .then(function (loadedArtifacts) {
                 expect(loadedArtifacts.modelTopology).toEqual(modelTopology1);
                 expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                expect(loadedArtifacts.weightData).toEqual(weightData1);
+                test_util_1.expectArrayBuffersEqual(loadedArtifacts.weightData, weightData1);
                 done();
             })
                 .catch(function (err) {
@@ -137,7 +137,7 @@ jasmine_util_1.describeWithFlags('IndexedDB', test_util_1.CPU_ENVS, function () 
                     expect(loadedArtifacts.modelTopology)
                         .toEqual(modelTopology1);
                     expect(loadedArtifacts.weightSpecs).toEqual(weightSpecs1);
-                    expect(loadedArtifacts.weightData).toEqual(weightData1);
+                    test_util_1.expectArrayBuffersEqual(loadedArtifacts.weightData, weightData1);
                     done();
                 })
                     .catch(function (err) {

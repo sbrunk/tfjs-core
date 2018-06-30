@@ -162,16 +162,13 @@ function queryMaxTextureSize(gl) {
     return MAX_TEXTURE_SIZE;
 }
 exports.queryMaxTextureSize = queryMaxTextureSize;
-function getChannelsPerTexture() {
-    if (!environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        return 4;
-    }
+function getNumChannels() {
     if (environment_1.ENV.get('WEBGL_VERSION') === 2) {
         return 1;
     }
     return 4;
 }
-exports.getChannelsPerTexture = getChannelsPerTexture;
+exports.getNumChannels = getNumChannels;
 function createTexture(gl) {
     return throwIfNull(gl, function () { return gl.createTexture(); }, 'Unable to create WebGLTexture.');
 }

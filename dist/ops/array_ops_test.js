@@ -314,6 +314,69 @@ jasmine_util_1.describeWithFlags('zerosLike', test_util_1.ALL_ENVS, function () 
         expect(b.shape).toEqual([2, 2, 1, 1]);
         test_util_1.expectArraysEqual(b, [0, 0, 0, 0]);
     });
+    it('4D default dtype', function () {
+        var a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [0, 0, 0, 0]);
+    });
+    it('5D float32 dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [0, 0, 0, 0]);
+    });
+    it('5D int32 dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'int32');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('int32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysEqual(b, [0, 0, 0, 0]);
+    });
+    it('5D bool dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'bool');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('bool');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysEqual(b, [0, 0, 0, 0]);
+    });
+    it('5D default dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1]);
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [0, 0, 0, 0]);
+    });
+    it('6D float32 dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1, 1]);
+        test_util_1.expectArraysClose(b, [0, 0, 0, 0]);
+    });
+    it('6D int32 dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'int32');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('int32');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysEqual(b, [0, 0, 0, 0]);
+    });
+    it('6D bool dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'bool');
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('bool');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysEqual(b, [0, 0, 0, 0]);
+    });
+    it('6D default dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1]);
+        var b = tf.zerosLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysClose(b, [0, 0, 0, 0]);
+    });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.zerosLike({}); })
             .toThrowError(/Argument 'x' passed to 'zerosLike' must be a Tensor/);
@@ -431,6 +494,69 @@ jasmine_util_1.describeWithFlags('onesLike', test_util_1.ALL_ENVS, function () {
         expect(b.dtype).toBe('bool');
         expect(b.shape).toEqual([2, 2, 1, 1]);
         test_util_1.expectArraysEqual(b, [1, 1, 1, 1]);
+    });
+    it('4D default dtype', function () {
+        var a = tf.tensor4d([1, 2, 3, 4], [2, 2, 1, 1]);
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [1, 1, 1, 1]);
+    });
+    it('5D float32 dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'float32');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [1, 1, 1, 1]);
+    });
+    it('5D int32 dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'int32');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('int32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysEqual(b, [1, 1, 1, 1]);
+    });
+    it('5D bool dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1], 'bool');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('bool');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysEqual(b, [1, 1, 1, 1]);
+    });
+    it('5D default dtype', function () {
+        var a = tf.tensor5d([1, 2, 3, 4], [1, 2, 2, 1, 1]);
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual([1, 2, 2, 1, 1]);
+        test_util_1.expectArraysClose(b, [1, 1, 1, 1]);
+    });
+    it('6D int32 dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'int32');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('int32');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysEqual(b, [1, 1, 1, 1]);
+    });
+    it('6D bool dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'bool');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('bool');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysEqual(b, [1, 1, 1, 1]);
+    });
+    it('6D default dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1]);
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysClose(b, [1, 1, 1, 1]);
+    });
+    it('6D float32 dtype', function () {
+        var a = tf.tensor6d([1, 2, 3, 4], [1, 2, 2, 1, 1, 1], 'float32');
+        var b = tf.onesLike(a);
+        expect(b.dtype).toBe('float32');
+        expect(b.shape).toEqual(a.shape);
+        test_util_1.expectArraysClose(b, [1, 1, 1, 1]);
     });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.onesLike({}); })
@@ -642,6 +768,14 @@ jasmine_util_1.describeWithFlags('randomNormal', test_util_1.ALL_ENVS, function 
         rand_util_1.jarqueBeraNormalityTest(result);
         rand_util_1.expectArrayInMeanStdRange(result, 0, 2, EPSILON);
     });
+    it('should return a int32 5D of random normal values', function () {
+        var SAMPLES_SHAPE = [10, 10, 10, 10, 10];
+        var result = tf.randomNormal(SAMPLES_SHAPE, 0, 2, 'int32', SEED);
+        expect(result.dtype).toBe('int32');
+        expect(result.shape).toEqual(SAMPLES_SHAPE);
+        rand_util_1.jarqueBeraNormalityTest(result);
+        rand_util_1.expectArrayInMeanStdRange(result, 0, 2, EPSILON);
+    });
 });
 jasmine_util_1.describeWithFlags('truncatedNormal', test_util_1.ALL_ENVS, function () {
     var EPSILON = 0.60;
@@ -807,6 +941,27 @@ jasmine_util_1.describeWithFlags('randomUniform', test_util_1.ALL_ENVS, function
     });
     it('should return a random 4D bool array', function () {
         var shape = [3, 4, 5, 6];
+        var result = tf.randomUniform(shape, 0, 1, 'bool');
+        expect(result.dtype).toBe('bool');
+        test_util_1.expectValuesInRange(result, 0, 1);
+    });
+    it('should return a random 5D float32 array', function () {
+        var shape = [2, 3, 4, 5, 6];
+        var result = tf.randomUniform(shape, 0, 2.5);
+        expect(result.dtype).toBe('float32');
+        test_util_1.expectValuesInRange(result, 0, 2.5);
+        result = tf.randomUniform(shape, 0, 1.5, 'float32');
+        expect(result.dtype).toBe('float32');
+        test_util_1.expectValuesInRange(result, 0, 1.5);
+    });
+    it('should return a random 5D int32 array', function () {
+        var shape = [2, 3, 4, 5, 6];
+        var result = tf.randomUniform(shape, 0, 2, 'int32');
+        expect(result.dtype).toBe('int32');
+        test_util_1.expectValuesInRange(result, 0, 2);
+    });
+    it('should return a random 5D bool array', function () {
+        var shape = [2, 3, 4, 5, 6];
         var result = tf.randomUniform(shape, 0, 1, 'bool');
         expect(result.dtype).toBe('bool');
         test_util_1.expectValuesInRange(result, 0, 1);
@@ -1282,6 +1437,18 @@ jasmine_util_1.describeWithFlags('tile', test_util_1.ALL_ENVS, function () {
         expect(t2.shape).toEqual([2, 4, 2]);
         test_util_1.expectArraysClose(t2, [1, 2, 3, 4, 1, 2, 3, 4, 5, 6, 7, 8, 5, 6, 7, 8]);
     });
+    it('4D (tile)', function () {
+        var t = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 2, 2]);
+        var t2 = tf.tile(t, [1, 2, 1, 1]);
+        expect(t2.shape).toEqual([1, 4, 2, 2]);
+        test_util_1.expectArraysClose(t2, [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+    it('5D (tile)', function () {
+        var t = tf.tensor5d([1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 2, 2, 2]);
+        var t2 = tf.tile(t, [1, 2, 1, 1, 1]);
+        expect(t2.shape).toEqual([1, 2, 2, 2, 2]);
+        test_util_1.expectArraysClose(t2, [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]);
+    });
     it('propagates NaNs', function () {
         var t = tf.tensor1d([1, 2, NaN]);
         var t2 = tf.tile(t, [2]);
@@ -1367,11 +1534,11 @@ jasmine_util_1.describeWithFlags('tile', test_util_1.ALL_ENVS, function () {
     it('4D (tile) gradient', function () {
         var x = tf.tensor4d([[[[1]], [[2]]], [[[3]], [[4]]]], [2, 2, 1, 1]);
         var dy = tf.tensor4d([
-            [[[1, 10], [100, 1000]], [[2, 20], [200, 2000]]],
-            [[[3, 30], [300, 3000]], [[4, 40], [400, 4000]]]
+            [[[.01, .1], [1, 10]], [[.02, .2], [2, 20]]],
+            [[[.03, .3], [3, 30]], [[.04, .4], [4, 40]]]
         ], [2, 2, 2, 2]);
         var gradients = tf.grad(function (x) { return tf.tile(x, [1, 1, 2, 2]); })(x, dy);
-        test_util_1.expectArraysClose(gradients, tf.tensor4d([[[[1111]], [[2222]]], [[[3333]], [[4444]]]], [2, 2, 1, 1]));
+        test_util_1.expectArraysClose(gradients, tf.tensor4d([[[[11.11]], [[22.22]]], [[[33.33]], [[44.44]]]], [2, 2, 1, 1]));
     });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.tile({}, [1]); })
@@ -1448,7 +1615,7 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [8, 6, 4]);
     });
-    it('gradient 2D (gather) axis=0', function () {
+    it('gradient 2D (gather) axis=0 shape=[2, 2]', function () {
         var t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
         var indices = tf.tensor1d([1, 0, 0, 1], 'int32');
         var dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [4, 2]);
@@ -1457,7 +1624,16 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [12, 14, 12, 14]);
     });
-    it('gradient 2D (gather) axis=1', function () {
+    it('gradient 2D (gather) axis=0 shape=[4, 1]', function () {
+        var t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+        var indices = tf.tensor1d([1, 0, 0, 1], 'int32');
+        var dy = tf.tensor([23, 7, 19, 13], [4, 1]);
+        var axis = 0;
+        var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
+        expect(gradients.shape).toEqual(t.shape);
+        test_util_1.expectArraysClose(gradients, [26, 36, 0, 0]);
+    });
+    it('gradient 2D (gather) axis=1 shape=[2, 2]', function () {
         var t = tf.tensor2d([1, 11, 2, 22], [2, 2]);
         var indices = tf.tensor1d([1, 0, 0, 1], 'int32');
         var dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10], [2, 4]);
@@ -1466,7 +1642,16 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [9, 9, 17, 17]);
     });
-    it('gradient 3D (gather) axis=0', function () {
+    it('gradient 2D (gather) axis=1 shape=[4, 1]', function () {
+        var t = tf.tensor2d([1, 11, 2, 22], [4, 1]);
+        var indices = tf.tensor1d([0, 0, 0, 0], 'int32');
+        var dy = tf.tensor([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], [4, 4]);
+        var axis = 1;
+        var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
+        expect(gradients.shape).toEqual(t.shape);
+        test_util_1.expectArraysClose(gradients, [18, 34, 50, 66]);
+    });
+    it('gradient 3D (gather) axis=0 shape=[2, 3, 2]', function () {
         var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
         var indices = tf.tensor1d([1, 0, 0, 1], 'int32');
         var dy = tf.tensor([
@@ -1478,7 +1663,19 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [5, 33, 12.01, -7, 30, 32, 4, 18, 10, 38, 30, 25.7]);
     });
-    it('gradient 3D (gather) axis=1', function () {
+    it('gradient 3D (gather) axis=0 shape=[1, 4, 4]', function () {
+        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+        var indices = tf.tensor1d([0, 0], 'int32');
+        var dy = tf.tensor([
+            2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7,
+            18, 19, 2, 21, 6, 23, 24, 25, 101, 31, 34, 54, 1, 0, -3, -4
+        ], [2, 4, 4]);
+        var axis = 0;
+        var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
+        expect(gradients.shape).toEqual(t.shape);
+        test_util_1.expectArraysClose(gradients, [20, 16, 6, 36, 12, 23.7, 25, 43, 101.01, 31, 46, 67, 5, 15, 9, -11]);
+    });
+    it('gradient 3D (gather) axis=1 shape=[2, 3, 2]', function () {
         var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
         var indices = tf.tensor1d([1, 2, 2, 1], 'int32');
         var dy = tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7], [2, 4, 2]);
@@ -1487,7 +1684,16 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [0, 0, 3, 15, 10, 15.7, 0, 0, 12.01, -7, 16, 28]);
     });
-    it('gradient 3D (gather) axis=2', function () {
+    it('gradient 3D (gather) axis=1 shape=[1, 4, 4]', function () {
+        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [1, 4, 4]);
+        var indices = tf.tensor1d([1, 2, 2, 1], 'int32');
+        var dy = tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 12, 13, 4, 15, 12, -7], [1, 4, 4]);
+        var axis = 1;
+        var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
+        expect(gradients.shape).toEqual(t.shape);
+        test_util_1.expectArraysClose(gradients, [0, 0, 0, 0, 6, 12, 16, 8, 6.01, .7, 13, 31, 0, 0, 0, 0]);
+    });
+    it('gradient 3D (gather) axis=2 shape=[2, 3, 2]', function () {
         var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
         var indices = tf.tensor1d([1, 0, 1, 0], 'int32');
         var dy = tf.tensor([
@@ -1498,6 +1704,15 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
         var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
         expect(gradients.shape).toEqual(t.shape);
         test_util_1.expectArraysClose(gradients, [12, 6, 18.7, 7, 13, 12.01, 8, 16, 40, 20, 48, 30]);
+    });
+    it('gradient 3D (gather) axis=2 shape=[4, 1, 4]', function () {
+        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 1, 4]);
+        var indices = tf.tensor1d([1, 3, 1], 'int32');
+        var dy = tf.tensor([2, -3, 4, 15, 6, 0.7, 1, 18, 0.01, 0, 4, 15], [4, 1, 3]);
+        var axis = 2;
+        var gradients = tf.grad(function (t) { return tf.gather(t, indices, axis); })(t, dy);
+        expect(gradients.shape).toEqual(t.shape);
+        test_util_1.expectArraysClose(gradients, [0, 6, 0, -3, 0, 15.7, 0, 6, 0, 1.01, 0, 18, 0, 15, 0, 4]);
     });
 });
 jasmine_util_1.describeWithFlags('oneHot', test_util_1.ALL_ENVS, function () {
@@ -1523,6 +1738,12 @@ jasmine_util_1.describeWithFlags('oneHot', test_util_1.ALL_ENVS, function () {
         expect(res.shape).toEqual([4, 3]);
         test_util_1.expectArraysClose(res, [0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0]);
     });
+    it('Out of range events do not trigger onValue', function () {
+        var indices = tf.tensor1d([-1, 5, 12345], 'int32');
+        var res = tf.oneHot(indices, 5);
+        expect(res.shape).toEqual([3, 5]);
+        test_util_1.expectArraysClose(res, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    });
     it('Depth 2 onValue=3, offValue=-2', function () {
         var indices = tf.tensor1d([0, 1], 'int32');
         var res = tf.oneHot(indices, 2, 3, -2);
@@ -1532,6 +1753,12 @@ jasmine_util_1.describeWithFlags('oneHot', test_util_1.ALL_ENVS, function () {
     it('indices not int32 throws error', function () {
         var indices = tf.tensor1d([0, 1], 'float32');
         expect(function () { return tf.oneHot(indices, 2); }).toThrowError();
+    });
+    it('check output dtype', function () {
+        var expectedType = 'int32';
+        var indices = tf.tensor1d([0, 1], 'int32');
+        var res = tf.oneHot(indices, 2);
+        expect(res.dtype).toEqual(expectedType);
     });
 });
 jasmine_util_1.describeWithFlags('linspace', test_util_1.ALL_ENVS, function () {
@@ -1699,6 +1926,12 @@ jasmine_util_1.describeWithFlags('fill', test_util_1.ALL_ENVS, function () {
         expect(a.dtype).toBe('float32');
         expect(a.shape).toEqual([3, 2, 1, 2]);
         test_util_1.expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
+    });
+    it('5D fill', function () {
+        var a = tf.fill([2, 1, 2, 1, 2], 2);
+        expect(a.dtype).toBe('float32');
+        expect(a.shape).toEqual([2, 1, 2, 1, 2]);
+        test_util_1.expectArraysClose(a, [2, 2, 2, 2, 2, 2, 2, 2]);
     });
 });
 jasmine_util_1.describeWithFlags('stack', test_util_1.ALL_ENVS, function () {
@@ -1965,6 +2198,11 @@ jasmine_util_1.describeWithFlags('expandDims', test_util_1.ALL_ENVS, function ()
         var res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(2);
         expect(res.shape).toEqual([3, 2, 1]);
         test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+    });
+    it('4d, axis=0', function () {
+        var res = tf.tensor4d([[[[4]]]]).expandDims();
+        expect(res.shape).toEqual([1, 1, 1, 1, 1]);
+        test_util_1.expectArraysClose(res, [4]);
     });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.expandDims({}); })

@@ -6,6 +6,7 @@ import { BackendTimingInfo, KernelBackend } from './backend';
 export declare class MathBackendCPU implements KernelBackend {
     private data;
     private canvas;
+    private firstUse;
     constructor();
     register(dataId: DataId, shape: number[], dtype: DataType): void;
     write(dataId: DataId, values: TypedArray): void;
@@ -28,8 +29,10 @@ export declare class MathBackendCPU implements KernelBackend {
     pow<T extends Tensor>(a: T, b: Tensor): T;
     matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean): Tensor2D;
     multiply(a: Tensor, b: Tensor): Tensor;
-    divide(a: Tensor, b: Tensor): Tensor;
+    realDivide(a: Tensor, b: Tensor): Tensor;
+    floorDiv(a: Tensor, b: Tensor): Tensor;
     sum(x: Tensor, axes: number[]): Tensor;
+    unsortedSegmentSum<T extends Tensor>(x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
     argMin(x: Tensor, axis: number): Tensor;
     argMax(x: Tensor, axis: number): Tensor;
     cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
@@ -51,6 +54,7 @@ export declare class MathBackendCPU implements KernelBackend {
     mod(a: Tensor, b: Tensor): Tensor;
     max(x: Tensor, axes: number[]): Tensor;
     maximum(a: Tensor, b: Tensor): Tensor;
+    all(x: Tensor, axes: number[]): Tensor;
     squaredDifference(a: Tensor, b: Tensor): Tensor;
     ceil<T extends Tensor>(x: T): T;
     floor<T extends Tensor>(x: T): T;
@@ -92,6 +96,8 @@ export declare class MathBackendCPU implements KernelBackend {
     conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     conv2dDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     tile<T extends Tensor>(x: T, reps: number[]): T;
     pad<T extends Tensor>(x: T, paddings: Array<[number, number]>, constantValue: number): T;
     transpose<T extends Tensor>(x: T, perm: number[]): T;

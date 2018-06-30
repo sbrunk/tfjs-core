@@ -153,7 +153,7 @@ var TensorBuffer = (function () {
 exports.TensorBuffer = TensorBuffer;
 var Tensor = (function () {
     function Tensor(shape, dtype, values, dataId) {
-        this.isDisposed = false;
+        this.isDisposedInternal = false;
         this.size = util.sizeFromShape(shape);
         if (values != null) {
             util.assert(this.size === values.length, "Constructing tensor of shape (" + this.size + ") should match the " +
@@ -245,9 +245,16 @@ var Tensor = (function () {
         if (this.isDisposed) {
             return;
         }
-        this.isDisposed = true;
         environment_1.ENV.engine.disposeTensor(this);
+        this.isDisposedInternal = true;
     };
+    Object.defineProperty(Tensor.prototype, "isDisposed", {
+        get: function () {
+            return this.isDisposedInternal;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Tensor.prototype.throwIfDisposed = function () {
         if (this.isDisposed) {
             throw new Error("Tensor is disposed.");
@@ -311,6 +318,10 @@ var Tensor = (function () {
         this.throwIfDisposed();
         return ops.matMul(this, b, transposeA, transposeB);
     };
+    Tensor.prototype.dot = function (b) {
+        this.throwIfDisposed();
+        return ops.dot(this, b);
+    };
     Tensor.prototype.norm = function (ord, axis, keepDims) {
         if (ord === void 0) { ord = 'euclidean'; }
         if (axis === void 0) { axis = null; }
@@ -347,6 +358,12 @@ var Tensor = (function () {
         if (varianceEpsilon === void 0) { varianceEpsilon = .001; }
         this.throwIfDisposed();
         return ops.batchNormalization(this, mean, variance, varianceEpsilon, scale, offset);
+    };
+    Tensor.prototype.all = function (axis, keepDims) {
+        if (axis === void 0) { axis = null; }
+        if (keepDims === void 0) { keepDims = false; }
+        this.throwIfDisposed();
+        return ops.all(this, axis, keepDims);
     };
     Tensor.prototype.logSumExp = function (axis, keepDims) {
         if (axis === void 0) { axis = null; }
@@ -427,6 +444,10 @@ var Tensor = (function () {
     Tensor.prototype.div = function (x) {
         this.throwIfDisposed();
         return ops.div(this, x);
+    };
+    Tensor.prototype.floorDiv = function (x) {
+        this.throwIfDisposed();
+        return ops.floorDiv(this, x);
     };
     Tensor.prototype.divStrict = function (x) {
         this.throwIfDisposed();
@@ -743,10 +764,9 @@ var Tensor = (function () {
         this.throwIfDisposed();
         return Variable.variable(this, trainable, name, dtype);
     };
-    Tensor.prototype.unsortedSegmentSum = function (segmentIds, numSegments, axis) {
-        if (axis === void 0) { axis = 0; }
+    Tensor.prototype.unsortedSegmentSum = function (segmentIds, numSegments) {
         this.throwIfDisposed();
-        return ops.unsortedSegmentSum(this, segmentIds, numSegments, axis);
+        return ops.unsortedSegmentSum(this, segmentIds, numSegments);
     };
     Tensor.nextId = 0;
     __decorate([

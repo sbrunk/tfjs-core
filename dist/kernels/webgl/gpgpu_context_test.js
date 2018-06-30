@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var test_util_1 = require("../../test_util");
 var jasmine_util_1 = require("../../jasmine_util");
+var test_util_1 = require("../../test_util");
 var gpgpu_context_1 = require("./gpgpu_context");
 var tex_util = require("./tex_util");
 jasmine_util_1.describeWithFlags('GPGPUContext downloadMatrixFromTexture', test_util_1.WEBGL_ENVS, function () {
@@ -10,7 +10,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext downloadMatrixFromTexture', test_
     beforeEach(function () {
         gpgpu = new gpgpu_context_1.GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
+        texture = gpgpu.createFloat32MatrixTexture(1, 1);
     });
     afterEach(function () {
         gpgpu.deleteMatrixTexture(texture);
@@ -18,22 +18,22 @@ jasmine_util_1.describeWithFlags('GPGPUContext downloadMatrixFromTexture', test_
     });
     it('returns 1x1 matrix that was uploaded', function () {
         gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([1.234]));
-        var result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         test_util_1.expectNumbersClose(result[0], 1.234);
     });
     it('returns 2x2 matrix that was uploaded', function () {
-        var texture2 = gpgpu.createMatrixTexture(2, 2);
+        var texture2 = gpgpu.createFloat32MatrixTexture(2, 2);
         gpgpu.uploadMatrixToTexture(texture2, 2, 2, new Float32Array([1.234, 2, 3, 4]));
-        var result = gpgpu.downloadMatrixFromTexture(texture2, 2, 2);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture2, 2, 2);
         test_util_1.expectArraysClose(result, new Float32Array([1.234, 2, 3, 4]));
         gpgpu.deleteMatrixTexture(texture2);
     });
     it('uses texture parameter', function () {
-        var texture2 = gpgpu.createMatrixTexture(1, 1);
+        var texture2 = gpgpu.createFloat32MatrixTexture(1, 1);
         gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([1]));
         gpgpu.uploadMatrixToTexture(texture2, 1, 1, new Float32Array([2]));
-        var read1 = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
-        var read2 = gpgpu.downloadMatrixFromTexture(texture2, 1, 1);
+        var read1 = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
+        var read2 = gpgpu.downloadFloat32MatrixFromOutputTexture(texture2, 1, 1);
         test_util_1.expectNumbersClose(read1[0], 1);
         test_util_1.expectNumbersClose(read2[0], 2);
         gpgpu.deleteMatrixTexture(texture2);
@@ -49,30 +49,11 @@ jasmine_util_1.describeWithFlags('GPGPUContext color texture with float', test_u
     it('basic', function () {
         gpgpu = new gpgpu_context_1.GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
+        texture = gpgpu.createFloat32MatrixTexture(1, 1);
         gpgpu.setOutputMatrixTexture(texture, 1, 1);
         gpgpu.gl.clearColor(0.123, 0, 0, 0);
         gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-        var result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
-        test_util_1.expectNumbersClose(result[0], 0.123);
-    });
-});
-jasmine_util_1.describeWithFlags('GPGPUContext color texture with byte', { 'WEBGL_FLOAT_TEXTURE_ENABLED': false }, function () {
-    var gpgpu;
-    var texture;
-    afterEach(function () {
-        gpgpu.deleteMatrixTexture(texture);
-        gpgpu.dispose();
-    });
-    it('basic', function () {
-        gpgpu = new gpgpu_context_1.GPGPUContext();
-        gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
-        gpgpu.setOutputMatrixTexture(texture, 1, 1);
-        var uintArray = tex_util.encodeFloatArray(new Float32Array([0.123]));
-        gpgpu.gl.clearColor(uintArray[0] / 255, uintArray[1] / 255, uintArray[2] / 255, uintArray[3] / 255);
-        gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-        var result = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         test_util_1.expectNumbersClose(result[0], 0.123);
     });
 });
@@ -82,7 +63,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixTexture', test_uti
     beforeEach(function () {
         gpgpu = new gpgpu_context_1.GPGPUContext();
         gpgpu.enableAutomaticDebugValidation(true);
-        texture = gpgpu.createMatrixTexture(1, 1);
+        texture = gpgpu.createFloat32MatrixTexture(1, 1);
     });
     afterEach(function () {
         gpgpu.deleteMatrixTexture(texture);
@@ -93,35 +74,35 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixTexture', test_uti
         expect(gpgpu.outputTexture).toBe(texture);
     });
     it('rebinds the output texture to the color buffer target', function () {
-        var output = gpgpu.createMatrixTexture(1, 1);
+        var output = gpgpu.createFloat32MatrixTexture(1, 1);
         gpgpu.uploadMatrixToTexture(texture, 1, 1, new Float32Array([10]));
         gpgpu.setOutputMatrixTexture(output, 1, 1);
-        var tBeforeClear = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        var tBeforeClear = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         test_util_1.expectNumbersClose(tBeforeClear[0], 10);
         gpgpu.gl.clearColor(1, 0, 0, 0);
         gpgpu.gl.clear(gpgpu.gl.COLOR_BUFFER_BIT);
-        var tAfterClear = gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        var tAfterClear = gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         test_util_1.expectNumbersClose(tAfterClear[0], 10);
         gpgpu.deleteMatrixTexture(output);
     });
     it('resets output texture to null if nothing was previously bound', function () {
         expect(gpgpu.outputTexture).toBeNull();
-        gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         expect(gpgpu.outputTexture).toBeNull();
     });
     it('sets the gl viewport to the output texture dimensions', function () {
         var columns = 456;
         var rows = 123;
-        var output = gpgpu.createMatrixTexture(rows, columns);
+        var output = gpgpu.createFloat32MatrixTexture(rows, columns);
         gpgpu.setOutputMatrixTexture(output, rows, columns);
         var expected = new Int32Array([0, 0, columns, rows]);
         expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
         gpgpu.deleteMatrixTexture(output);
     });
     it('doesn\'t change gl viewport when downloading a non-output tex', function () {
-        var output = gpgpu.createMatrixTexture(128, 128);
+        var output = gpgpu.createFloat32MatrixTexture(128, 128);
         gpgpu.setOutputMatrixTexture(output, 128, 128);
-        gpgpu.downloadMatrixFromTexture(texture, 1, 1);
+        gpgpu.downloadFloat32MatrixFromOutputTexture(texture, 1, 1);
         var expected = new Int32Array([0, 0, 128, 128]);
         expect(gpgpu.gl.getParameter(gpgpu.gl.VIEWPORT)).toEqual(expected);
         gpgpu.deleteMatrixTexture(output);
@@ -164,7 +145,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', test
         gpgpu.enableAutomaticDebugValidation(true);
         var src = 'precision highp float; void main() { gl_FragColor = vec4(2,0,0,0); }';
         program = gpgpu.createProgram(src);
-        output = gpgpu.createMatrixTexture(4, 4);
+        output = gpgpu.createFloat32MatrixTexture(4, 4);
         gpgpu.uploadMatrixToTexture(output, 4, 4, new Float32Array(16));
         gpgpu.setOutputMatrixTexture(output, 4, 4);
         gpgpu.setProgram(program);
@@ -176,7 +157,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', test
     });
     it('writes to all pixels by default', function () {
         gpgpu.executeProgram();
-        var result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
         var expected = new Float32Array(4 * 4);
         expected.fill(2);
         test_util_1.expectArraysClose(result, expected);
@@ -192,7 +173,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', test
     it('writes only to center 2x2 region of 4x4 texture', function () {
         gpgpu.setOutputMatrixWriteRegion(1, 2, 1, 2);
         gpgpu.executeProgram();
-        var result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
         var expected = new Float32Array([0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0]);
         test_util_1.expectArraysClose(result, expected);
     });
@@ -201,7 +182,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', test
         gpgpu.executeProgram();
         gpgpu.setOutputMatrixWriteRegion(3, 1, 0, 4);
         gpgpu.executeProgram();
-        var result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
         var expected = new Float32Array([2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2]);
         test_util_1.expectArraysClose(result, expected);
     });
@@ -212,7 +193,7 @@ jasmine_util_1.describeWithFlags('GPGPUContext setOutputMatrixWriteRegion', test
                 gpgpu.executeProgram();
             }
         }
-        var result = gpgpu.downloadMatrixFromTexture(output, 4, 4);
+        var result = gpgpu.downloadFloat32MatrixFromOutputTexture(output, 4, 4);
         var expected = new Float32Array(4 * 4);
         expected.fill(2);
         test_util_1.expectArraysClose(result, expected);
@@ -235,12 +216,84 @@ jasmine_util_1.describeWithFlags('GPGPUContext', test_util_1.WEBGL_ENVS, functio
     it('throws an error if validation is on and framebuffer incomplete', function () {
         var src = "precision highp float; void main() {}";
         var program = gpgpu.createProgram(src);
-        var result = gpgpu.createMatrixTexture(1, 1);
+        var result = gpgpu.createFloat32MatrixTexture(1, 1);
         gpgpu.setOutputMatrixTexture(result, 1, 1);
         gpgpu.setProgram(program);
         gpgpu.deleteMatrixTexture(result);
         expect(gpgpu.executeProgram).toThrowError();
         gpgpu.deleteProgram(program);
+    });
+});
+describe('gpgpu_context binSearchLastTrue', function () {
+    it('[false]', function () {
+        var a = [false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(-1);
+    });
+    it('[true]', function () {
+        var a = [true];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(0);
+    });
+    it('[false, false]', function () {
+        var a = [false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(-1);
+    });
+    it('[true, false]', function () {
+        var a = [true, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(0);
+    });
+    it('[true, true]', function () {
+        var a = [true, true];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(1);
+    });
+    it('[false, false, false]', function () {
+        var a = [false, false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(-1);
+    });
+    it('[true, false, false]', function () {
+        var a = [true, false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(0);
+    });
+    it('[true, true, false]', function () {
+        var a = [true, true, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(1);
+    });
+    it('[true, true, true]', function () {
+        var a = [true, true, true];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(2);
+    });
+    it('[false, false, false, false]', function () {
+        var a = [false, false, false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(-1);
+    });
+    it('[true, false, false, false]', function () {
+        var a = [true, false, false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(0);
+    });
+    it('[true, true, false, false]', function () {
+        var a = [true, true, false, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(1);
+    });
+    it('[true, true, true, false]', function () {
+        var a = [true, true, true, false];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(2);
+    });
+    it('[true, true, true, true]', function () {
+        var a = [true, true, true, true];
+        var arr = a.map(function (x) { return function () { return x; }; });
+        expect(gpgpu_context_1.binSearchLastTrue(arr)).toBe(3);
     });
 });
 //# sourceMappingURL=gpgpu_context_test.js.map

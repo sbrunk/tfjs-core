@@ -11,6 +11,16 @@ jasmine_util_1.describeWithFlags('relu', test_util_1.ALL_ENVS, function () {
         var result = tf.relu(a);
         test_util_1.expectArraysClose(result, [1, 0, 0, 3, 0]);
     });
+    it('5D', function () {
+        var a = tf.tensor5d([1, -2, 5, -3], [1, 2, 2, 1, 1]);
+        var result = tf.relu(a);
+        test_util_1.expectArraysClose(result, [1, 0, 5, 0]);
+    });
+    it('6D', function () {
+        var a = tf.tensor6d([1, -2, 5, -3, -1, 4, 7, 8], [1, 2, 2, 2, 1, 1]);
+        var result = tf.relu(a);
+        test_util_1.expectArraysClose(result, [1, 0, 5, 0, 0, 4, 7, 8]);
+    });
     it('does nothing to positive values', function () {
         var a = tf.scalar(1);
         var result = tf.relu(a);
@@ -69,6 +79,16 @@ jasmine_util_1.describeWithFlags('abs', test_util_1.ALL_ENVS, function () {
         var a = tf.tensor1d([1, -2, 0, 3, -0.1]);
         var result = tf.abs(a);
         test_util_1.expectArraysClose(result, [1, 2, 0, 3, 0.1]);
+    });
+    it('5D', function () {
+        var a = tf.tensor5d([1, -2, 0, -3], [1, 2, 2, 1, 1]);
+        var result = tf.abs(a);
+        test_util_1.expectArraysClose(result, [1, 2, 0, 3]);
+    });
+    it('6D', function () {
+        var a = tf.tensor6d([1, -2, 5, -3, -1, 4, 7, 8], [1, 2, 2, 2, 1, 1]);
+        var result = tf.abs(a);
+        test_util_1.expectArraysClose(result, [1, 2, 5, 3, 1, 4, 7, 8]);
     });
     it('propagates NaNs', function () {
         var a = tf.tensor1d([1, -2, 0, 3, -0.1, NaN]);
@@ -207,6 +227,15 @@ jasmine_util_1.describeWithFlags('sigmoid', test_util_1.ALL_ENVS, function () {
         }
         test_util_1.expectArraysClose(result, expected);
     });
+    it('6D', function () {
+        var a = tf.ones([2, 2, 2, 2, 2, 2]);
+        var result = tf.sigmoid(a);
+        var expected = [];
+        for (var i = 0; i < a.size; i++) {
+            expected[i] = 1 / (1 + Math.exp(-1.0));
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
     it('propagates NaNs', function () {
         var a = tf.tensor1d([3, NaN]);
         var res = tf.sigmoid(a);
@@ -256,10 +285,10 @@ jasmine_util_1.describeWithFlags('logSigmoid', test_util_1.ALL_ENVS, function ()
         test_util_1.expectArraysClose(result, expected);
     });
     it('larger magnitude negative inputs', function () {
-        var values = [-100, -200, -3000, -50000];
+        var values = [-100, -200, -3000];
         var a = tf.tensor1d(values);
         var result = tf.logSigmoid(a);
-        var expected = [-100, -200, -3000, -50000];
+        var expected = [-100, -200, -3000];
         test_util_1.expectArraysClose(result, expected);
     });
     it('larger magnitude positive inputs', function () {
@@ -345,10 +374,10 @@ jasmine_util_1.describeWithFlags('softplus', test_util_1.ALL_ENVS, function () {
         test_util_1.expectArraysClose(result, expected);
     });
     it('larger magnitude positive inputs', function () {
-        var values = [100, 200, 3000, 50000];
+        var values = [100, 200, 3000];
         var a = tf.tensor1d(values);
         var result = tf.softplus(a);
-        var expected = [100, 200, 3000, 50000];
+        var expected = [100, 200, 3000];
         test_util_1.expectArraysClose(result, expected);
     });
     it('propagates NaNs', function () {
@@ -498,6 +527,18 @@ jasmine_util_1.describeWithFlags('square', test_util_1.ALL_ENVS, function () {
         expect(r.shape).toEqual([2, 2]);
         test_util_1.expectArraysClose(r, [1, 4, 2, 3]);
     });
+    it('5D array', function () {
+        var a = tf.tensor5d([1, 2, Math.sqrt(2), Math.sqrt(3)], [1, 1, 2, 2, 1]);
+        var r = tf.square(a);
+        expect(r.shape).toEqual([1, 1, 2, 2, 1]);
+        test_util_1.expectArraysClose(r, [1, 4, 2, 3]);
+    });
+    it('6D array', function () {
+        var a = tf.tensor6d([1, 2, Math.sqrt(2), Math.sqrt(3), 3, 4, Math.sqrt(7), Math.sqrt(13)], [1, 1, 2, 2, 2, 1]);
+        var r = tf.square(a);
+        expect(r.shape).toEqual(a.shape);
+        test_util_1.expectArraysClose(r, [1, 4, 2, 3, 9, 16, 7, 13]);
+    });
     it('square propagates NaNs', function () {
         var a = tf.tensor1d([1.5, NaN]);
         var r = tf.square(a);
@@ -526,6 +567,22 @@ jasmine_util_1.describeWithFlags('square', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(a.shape);
         expect(gradients.dtype).toEqual('float32');
         test_util_1.expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4]);
+    });
+    it('gradients: Tensor5D', function () {
+        var a = tf.tensor5d([-3, 1, 2, 3], [1, 1, 1, 2, 2]);
+        var dy = tf.tensor5d([1, 2, 3, 4], [1, 1, 1, 2, 2]);
+        var gradients = tf.grad(function (a) { return tf.square(a); })(a, dy);
+        expect(gradients.shape).toEqual(a.shape);
+        expect(gradients.dtype).toEqual('float32');
+        test_util_1.expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4]);
+    });
+    it('gradients: Tensor6D', function () {
+        var a = tf.tensor6d([-3, 1, 2, 3, -4, 5, 12, 3], [1, 1, 1, 2, 2, 2]);
+        var dy = tf.tensor6d([1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 1, 2, 2, 2]);
+        var gradients = tf.grad(function (a) { return tf.square(a); })(a, dy);
+        expect(gradients.shape).toEqual(a.shape);
+        expect(gradients.dtype).toEqual('float32');
+        test_util_1.expectArraysClose(gradients, [-6 * 1, 2 * 2, 4 * 3, 6 * 4, -8 * 5, 10 * 6, 24 * 7, 6 * 8]);
     });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.square({}); })
@@ -590,6 +647,15 @@ jasmine_util_1.describeWithFlags('log', test_util_1.ALL_ENVS, function () {
         var r = tf.log(a);
         test_util_1.expectNumbersClose(r.get(0), Math.log(1));
         test_util_1.expectNumbersClose(r.get(1), Math.log(2));
+    });
+    it('log 6D', function () {
+        var a = tf.range(1, 65).reshape([2, 2, 2, 2, 2, 2]);
+        var r = tf.log(a);
+        var expectedResult = [];
+        for (var i = 1; i < 65; i++) {
+            expectedResult[i - 1] = Math.log(i);
+        }
+        test_util_1.expectArraysClose(r, expectedResult);
     });
     it('log propagates NaNs', function () {
         var a = tf.tensor1d([1, NaN]);
@@ -1157,6 +1223,15 @@ jasmine_util_1.describeWithFlags('atan', test_util_1.ALL_ENVS, function () {
         }
         test_util_1.expectArraysClose(result, expected);
     });
+    it('6D atan', function () {
+        var a = tf.range(1, 65).reshape([2, 2, 2, 2, 2, 2]);
+        var result = tf.atan(a);
+        var expected = [];
+        for (var i = 1; i < 65; ++i) {
+            expected[i - 1] = Math.atan(i);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
     it('propagates NaNs', function () {
         var a = tf.tensor1d([4, NaN, 0]);
         var res = tf.atan(a);
@@ -1205,7 +1280,7 @@ jasmine_util_1.describeWithFlags('atan', test_util_1.ALL_ENVS, function () {
 });
 jasmine_util_1.describeWithFlags('sinh', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
-        var values = [1, -3, 2, 7, -4];
+        var values = [1, -3, 2, -1, -4];
         var a = tf.tensor1d(values);
         var result = tf.sinh(a);
         var expected = [];
@@ -1560,6 +1635,16 @@ jasmine_util_1.describeWithFlags('clip', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(x.shape);
         expect(gradients.dtype).toEqual('float32');
         test_util_1.expectArraysClose(gradients, [0, 0, 500]);
+    });
+    it('derivative: 1D tensor with max or min value', function () {
+        var min = -1;
+        var max = 2;
+        var x = tf.tensor1d([-1, 1, 2, 3]);
+        var dy = tf.tensor1d([1, 10, 100, 1000]);
+        var gradients = tf.grad(function (x) { return x.clipByValue(min, max); })(x, dy);
+        expect(gradients.shape).toEqual(x.shape);
+        expect(gradients.dtype).toEqual('float32');
+        test_util_1.expectArraysClose(gradients, [1, 10, 100, 0]);
     });
     it('derivative: scalar', function () {
         var min = -1;

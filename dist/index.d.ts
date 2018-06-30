@@ -17,7 +17,7 @@ export { Optimizer } from './optimizers/optimizer';
 export { RMSPropOptimizer } from './optimizers/rmsprop_optimizer';
 export { SGDOptimizer } from './optimizers/sgd_optimizer';
 export { Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer, variable, Variable } from './tensor';
-export { DataType, Rank, ShapeMap } from './types';
+export { DataType, InferenceModel, ModelPredictConfig, NamedTensorMap, Rank, ShapeMap } from './types';
 export * from './ops/ops';
 export { LSTMCellFunc } from './ops/lstm';
 export { Reduction } from './ops/loss_ops';

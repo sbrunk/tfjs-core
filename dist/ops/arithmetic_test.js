@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('div', test_util_1.ALL_ENVS, function () {
     it('same shape', function () {
         var a = tf.tensor2d([1, 2, 3, 4, 5, 6], [2, 3]);
@@ -519,7 +519,7 @@ jasmine_util_1.describeWithFlags('pow', test_util_1.ALL_ENVS, function () {
     });
     it('gradient: Tensor2D / Tensor2D w/ broadcast', function () {
         var a = tf.tensor2d([3, 4], [2, 1]);
-        var b = tf.tensor2d([[2, 3], [4, 5]], [2, 2]);
+        var b = tf.tensor2d([[2, 3], [.4, .5]], [2, 2]);
         var dy = tf.tensor2d([[6, 7], [8, 9]], [2, 2]);
         var grads = tf.grads(function (a, b) { return tf.pow(a, b); });
         var _a = grads([a, b], dy), da = _a[0], db = _a[1];
@@ -527,13 +527,13 @@ jasmine_util_1.describeWithFlags('pow', test_util_1.ALL_ENVS, function () {
         expect(da.dtype).toEqual('float32');
         test_util_1.expectArraysClose(da, [
             6 * 2 * Math.pow(3, 1) + 7 * 3 * Math.pow(3, 2),
-            8 * 4 * Math.pow(4, 3) + 9 * 5 * Math.pow(4, 4)
+            8 * .4 * Math.pow(4, .4 - 1) + 9 * .5 * Math.pow(4, .5 - 1)
         ]);
         expect(db.shape).toEqual(b.shape);
         expect(db.dtype).toEqual('float32');
         test_util_1.expectArraysClose(db, [
             6 * Math.pow(3, 2) * Math.log(3), 7 * Math.pow(3, 3) * Math.log(3),
-            8 * Math.pow(4, 4) * Math.log(4), 9 * Math.pow(4, 5) * Math.log(4)
+            8 * Math.pow(4, .4) * Math.log(4), 9 * Math.pow(4, .5) * Math.log(4)
         ]);
     });
     it('throws when passed base as a non-tensor', function () {
@@ -627,6 +627,32 @@ jasmine_util_1.describeWithFlags('add', test_util_1.ALL_ENVS, function () {
         var res = tf.add(a, b);
         expect(res.shape).toEqual([2, 3, 1]);
         test_util_1.expectArraysClose(res, [0, 1, 2, 3, 4, 5]);
+    });
+    it('6D+scalar', function () {
+        var a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+        var b = tf.scalar(-1);
+        var res = tf.add(a, b);
+        expect(res.shape).toEqual([2, 2, 2, 2, 2, 2]);
+        var expectedResult = [
+            -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+            47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62
+        ];
+        test_util_1.expectArraysClose(res, expectedResult);
+    });
+    it('6D+2D', function () {
+        var a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+        var b = tf.tensor2d([11, 13, 17, 19], [2, 2]);
+        var res = tf.add(a, b);
+        expect(res.shape).toEqual([2, 2, 2, 2, 2, 2]);
+        var expectedResult = [
+            11, 14, 19, 22, 15, 18, 23, 26, 19, 22, 27, 30, 23, 26, 31, 34,
+            27, 30, 35, 38, 31, 34, 39, 42, 35, 38, 43, 46, 39, 42, 47, 50,
+            43, 46, 51, 54, 47, 50, 55, 58, 51, 54, 59, 62, 55, 58, 63, 66,
+            59, 62, 67, 70, 63, 66, 71, 74, 67, 70, 75, 78, 71, 74, 79, 82
+        ];
+        test_util_1.expectArraysClose(res, expectedResult);
     });
     it('gradient: scalar + 1D broadcast', function () {
         var a = tf.scalar(2);

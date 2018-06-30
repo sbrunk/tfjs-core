@@ -46,11 +46,12 @@ var environment_1 = require("../environment");
 var tensor_1 = require("../tensor");
 var tensor_util = require("../tensor_util");
 var util = require("../util");
+var axis_util = require("./axis_util");
 var axis_util_1 = require("./axis_util");
 var concat_1 = require("./concat");
 var operation_1 = require("./operation");
 var rand_1 = require("./rand");
-var reduction_ops_1 = require("./reduction_ops");
+var segment_ops_1 = require("./segment_ops");
 var ArrayOps = (function () {
     function ArrayOps() {
     }
@@ -130,6 +131,40 @@ var ArrayOps = (function () {
                 'are a flat array');
         }
         shape = shape || inferredShape;
+        return ArrayOps.tensor(values, shape, dtype);
+    };
+    ArrayOps.tensor5d = function (values, shape, dtype) {
+        if (dtype === void 0) { dtype = 'float32'; }
+        if (shape != null && shape.length !== 5) {
+            throw new Error('tensor5d() requires shape to have five numbers');
+        }
+        var inferredShape = util.inferShape(values);
+        if (inferredShape.length !== 5 && inferredShape.length !== 1) {
+            throw new Error('tensor5d() requires values to be \
+           number[][][][][] or flat/TypedArray');
+        }
+        if (inferredShape.length === 1 && shape == null) {
+            throw new Error('tensor5d() requires shape to be provided when `values` ' +
+                'are a flat array');
+        }
+        shape = shape || inferredShape;
+        return ArrayOps.tensor(values, shape, dtype);
+    };
+    ArrayOps.tensor6d = function (values, shape, dtype) {
+        if (dtype === void 0) { dtype = 'float32'; }
+        if (shape != null && shape.length !== 6) {
+            throw new Error('tensor6d() requires shape to have six numbers');
+        }
+        var inferredShape = util.inferShape(values);
+        if (inferredShape.length !== 6 && inferredShape.length !== 1) {
+            throw new Error('tensor6d() requires values to be number[][][][] or flat/TypedArray');
+        }
+        if (inferredShape.length === 1 && shape == null) {
+            throw new Error('tensor6d() requires shape to be provided when `values` ' +
+                'are a flat array');
+        }
+        shape = shape ||
+            inferredShape;
         return ArrayOps.tensor(values, shape, dtype);
     };
     ArrayOps.ones = function (shape, dtype) {
@@ -445,7 +480,26 @@ var ArrayOps = (function () {
         axis = axis_util_1.parseAxisParam(axis, x.shape)[0];
         var grad = function (dy) {
             var derX = function () {
-                return reduction_ops_1.ReductionOps.unsortedSegmentSum(dy, indices, x.shape[axis], axis);
+                if (axis === 0) {
+                    return segment_ops_1.SegmentOps.unsortedSegmentSum(dy, indices, x.shape[axis]);
+                }
+                var paramsShape = x.shape;
+                var indicesSize = indices.size;
+                var outerShape = paramsShape.slice(0, axis);
+                var outerDims = outerShape.length;
+                var innerShape = paramsShape.slice(axis, paramsShape.length).slice(1);
+                var innerDims = innerShape.length;
+                var outerAxesIndices = arrayRange(0, outerDims);
+                var innerAxesIndices = arrayRange(outerDims + 1, outerDims + 1 + innerDims);
+                var valuesShape = arrayConcat([outerShape, [indicesSize], innerShape]);
+                var values = dy.reshape(valuesShape);
+                var reshapedIndices = indices.reshape([indicesSize]);
+                var transposeDims = arrayConcat([[outerDims], outerAxesIndices, innerAxesIndices]);
+                var valuesTranspose = values.transpose(transposeDims);
+                var paramsGrad = segment_ops_1.SegmentOps.unsortedSegmentSum(valuesTranspose, reshapedIndices, x.shape[axis]);
+                var invertTransposeDims = axis_util.getUndoAxesPermutation(transposeDims);
+                paramsGrad = paramsGrad.transpose(invertTransposeDims);
+                return paramsGrad;
             };
             return { x: derX };
         };
@@ -556,15 +610,17 @@ var ArrayOps = (function () {
         if (exclusive === void 0) { exclusive = false; }
         if (reverse === void 0) { reverse = false; }
         util.assertArgumentsAreTensors({ x: x }, 'cumsum');
+        axis = axis | 0;
         var permutation = axis_util_1.getAxesPermutation([axis], x.rank);
         var permutedX = x;
         if (permutation != null) {
             permutedX = x.transpose(permutation);
         }
+        var permutedAxis = axis_util_1.getInnerMostAxes(1, x.rank)[0];
         var grad = function (dy) {
             return { permutedX: function () { return dy.cumsum(axis, exclusive, !reverse); } };
         };
-        var value = environment_1.ENV.engine.runKernel(function (backend) { return backend.cumsum(permutedX, axis, exclusive, reverse); }, { permutedX: permutedX }, grad);
+        var value = environment_1.ENV.engine.runKernel(function (backend) { return backend.cumsum(permutedX, permutedAxis, exclusive, reverse); }, { permutedX: permutedX }, grad);
         if (permutation != null) {
             value = value.transpose(permutation);
         }
@@ -640,6 +696,12 @@ var ArrayOps = (function () {
     __decorate([
         doc_1.doc({ heading: 'Tensors', subheading: 'Creation' })
     ], ArrayOps, "tensor4d", null);
+    __decorate([
+        doc_1.doc({ heading: 'Tensors', subheading: 'Creation' })
+    ], ArrayOps, "tensor5d", null);
+    __decorate([
+        doc_1.doc({ heading: 'Tensors', subheading: 'Creation' })
+    ], ArrayOps, "tensor6d", null);
     __decorate([
         doc_1.doc({ heading: 'Tensors', subheading: 'Creation' }),
         operation_1.operation
@@ -790,5 +852,21 @@ function noConversionNeeded(a, dtype) {
     return (a instanceof Float32Array && dtype === 'float32') ||
         (a instanceof Int32Array && dtype === 'int32') ||
         (a instanceof Uint8Array && dtype === 'bool');
+}
+function arrayRange(start, stop) {
+    var result = [];
+    for (var i = start; i < stop; ++i) {
+        result.push(i);
+    }
+    return result;
+}
+function arrayConcat(arrays) {
+    var result = [];
+    for (var i = 0; i < arrays.length; ++i) {
+        for (var j = 0; j < arrays[i].length; ++j) {
+            result.push(arrays[i][j]);
+        }
+    }
+    return result;
 }
 //# sourceMappingURL=array_ops.js.map

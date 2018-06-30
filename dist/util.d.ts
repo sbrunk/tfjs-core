@@ -39,5 +39,5 @@ export declare function copyTypedArray<D extends DataType>(array: DataTypeMap[D]
 export declare function isTypedArray(a: TypedArray | number | boolean | RegularArray<number> | RegularArray<boolean>): boolean;
 export declare function bytesPerElement(dtype: DataType): number;
 export declare function isFunction(f: Function): boolean;
-export declare function extractTensorsFromContainer(result: TensorContainer): Tensor[];
-export declare function extractTensorsFromAny(result: any): Tensor[];
+export declare function getTensorsInContainer(result: TensorContainer): Tensor[];
+export declare function nearestDivisor(size: number, start: number): number;

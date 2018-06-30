@@ -84,6 +84,26 @@ var MatmulOps = (function () {
             (v1.rank + " and " + v2.rank + "."));
         return v1.as2D(-1, 1).matMul(v2.as2D(1, -1));
     };
+    MatmulOps.dot = function (t1, t2) {
+        util.assert((t1.rank === 1 || t1.rank === 2) && (t2.rank === 1 || t2.rank === 2), "Error in dot: inputs must all be rank 1 or 2, but got ranks " +
+            (t1.rank + " and " + t2.rank + "."));
+        var t1Inner = (t1.rank === 1 ? t1.size : t1.shape[1]);
+        var t2Inner = (t2.rank === 1 ? t2.size : t2.shape[0]);
+        util.assert(t1Inner === t2Inner, "Error in dot: inner dimensions of inputs must match, but got " +
+            (t1Inner + " and " + t2Inner + "."));
+        if (t1.rank === 1 && t2.rank === 1) {
+            return t1.as2D(1, -1).matMul(t2.as2D(-1, 1)).asScalar();
+        }
+        else if (t1.rank === 1 && t2.rank === 2) {
+            return t1.as2D(1, -1).matMul(t2.as2D(t2.shape[0], t2.shape[1])).as1D();
+        }
+        else if (t1.rank === 2 && t2.rank === 1) {
+            return t1.matMul(t2.as2D(-1, 1)).as1D();
+        }
+        else {
+            return t1.matMul(t2.as2D(t2.shape[0], t2.shape[1]));
+        }
+    };
     __decorate([
         doc_1.doc({ heading: 'Operations', subheading: 'Matrices' }),
         operation_1.operation
@@ -101,6 +121,10 @@ var MatmulOps = (function () {
         doc_1.doc({ heading: 'Operations', subheading: 'Matrices' }),
         operation_1.operation
     ], MatmulOps, "outerProduct", null);
+    __decorate([
+        doc_1.doc({ heading: 'Operations', subheading: 'Matrices' }),
+        operation_1.operation
+    ], MatmulOps, "dot", null);
     return MatmulOps;
 }());
 exports.MatmulOps = MatmulOps;

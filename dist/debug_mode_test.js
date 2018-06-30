@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("./index");
-var test_util_1 = require("./test_util");
 var jasmine_util_1 = require("./jasmine_util");
+var test_util_1 = require("./test_util");
 jasmine_util_1.describeWithFlags('debug on', test_util_1.ALL_ENVS, function () {
     beforeAll(function () {
         tf.ENV.set('DEBUG', true);

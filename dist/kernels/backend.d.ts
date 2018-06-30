@@ -28,8 +28,10 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     add(a: Tensor, b: Tensor): Tensor;
     subtract(a: Tensor, b: Tensor): Tensor;
     multiply(a: Tensor, b: Tensor): Tensor;
-    divide(a: Tensor, b: Tensor): Tensor;
+    realDivide(a: Tensor, b: Tensor): Tensor;
+    floorDiv(a: Tensor, b: Tensor): Tensor;
     sum(x: Tensor, axes: number[]): Tensor;
+    unsortedSegmentSum<T extends Tensor>(x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
     argMin(x: Tensor, axis: number): Tensor;
     argMax(x: Tensor, axis: number): Tensor;
     equal(a: Tensor, b: Tensor): Tensor;
@@ -49,6 +51,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     mod(a: Tensor, b: Tensor): Tensor;
     max(x: Tensor, axes: number[]): Tensor;
     maximum(a: Tensor, b: Tensor): Tensor;
+    all(x: Tensor, axes: number[]): Tensor;
     squaredDifference(a: Tensor, b: Tensor): Tensor;
     ceil<T extends Tensor>(x: T): T;
     floor<T extends Tensor>(x: T): T;
@@ -91,6 +94,8 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     conv2dDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     depthwiseConv2D(input: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerFilter(x: Tensor4D, dY: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;

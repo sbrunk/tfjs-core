@@ -13,7 +13,7 @@ export declare function validateProgram(gl: WebGLRenderingContext, program: WebG
 export declare function createStaticVertexBuffer(gl: WebGLRenderingContext, data: Float32Array): WebGLBuffer;
 export declare function createStaticIndexBuffer(gl: WebGLRenderingContext, data: Uint16Array): WebGLBuffer;
 export declare function queryMaxTextureSize(gl: WebGLRenderingContext): number;
-export declare function getChannelsPerTexture(): number;
+export declare function getNumChannels(): number;
 export declare function createTexture(gl: WebGLRenderingContext): WebGLTexture;
 export declare function validateTextureSize(gl: WebGLRenderingContext, width: number, height: number): void;
 export declare function createFramebuffer(gl: WebGLRenderingContext): WebGLFramebuffer;

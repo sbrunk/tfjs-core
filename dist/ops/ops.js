@@ -18,6 +18,8 @@ var norm_1 = require("./norm");
 var pool_1 = require("./pool");
 var reduction_ops_1 = require("./reduction_ops");
 var reverse_1 = require("./reverse");
+var segment_ops_1 = require("./segment_ops");
+var sigmoid_cross_entropy_1 = require("./sigmoid_cross_entropy");
 var slice_1 = require("./slice");
 var softmax_1 = require("./softmax");
 var strided_slice_1 = require("./strided_slice");
@@ -41,6 +43,7 @@ exports.matMul = matmul_1.MatmulOps.matMul;
 exports.matrixTimesVector = matmul_1.MatmulOps.matrixTimesVector;
 exports.outerProduct = matmul_1.MatmulOps.outerProduct;
 exports.vectorTimesMatrix = matmul_1.MatmulOps.vectorTimesMatrix;
+exports.dot = matmul_1.MatmulOps.dot;
 exports.avgPool = pool_1.PoolOps.avgPool;
 exports.maxPool = pool_1.PoolOps.maxPool;
 exports.transpose = transpose_1.TransposeOps.transpose;
@@ -61,9 +64,10 @@ exports.logSumExp = reduction_ops_1.ReductionOps.logSumExp;
 exports.max = reduction_ops_1.ReductionOps.max;
 exports.mean = reduction_ops_1.ReductionOps.mean;
 exports.min = reduction_ops_1.ReductionOps.min;
+exports.all = reduction_ops_1.ReductionOps.all;
 exports.moments = reduction_ops_1.ReductionOps.moments;
 exports.sum = reduction_ops_1.ReductionOps.sum;
-exports.unsortedSegmentSum = reduction_ops_1.ReductionOps.unsortedSegmentSum;
+exports.unsortedSegmentSum = segment_ops_1.SegmentOps.unsortedSegmentSum;
 exports.equal = compare_1.CompareOps.equal;
 exports.equalStrict = compare_1.CompareOps.equalStrict;
 exports.greater = compare_1.CompareOps.greater;
@@ -122,6 +126,7 @@ exports.add = binary_ops_1.BinaryOps.add;
 exports.addStrict = binary_ops_1.BinaryOps.addStrict;
 exports.atan2 = binary_ops_1.BinaryOps.atan2;
 exports.div = binary_ops_1.BinaryOps.div;
+exports.floorDiv = binary_ops_1.BinaryOps.floorDiv;
 exports.divStrict = binary_ops_1.BinaryOps.divStrict;
 exports.maximum = binary_ops_1.BinaryOps.maximum;
 exports.maximumStrict = binary_ops_1.BinaryOps.maximumStrict;
@@ -167,6 +172,8 @@ exports.tensor1d = array_ops_1.ArrayOps.tensor1d;
 exports.tensor2d = array_ops_1.ArrayOps.tensor2d;
 exports.tensor3d = array_ops_1.ArrayOps.tensor3d;
 exports.tensor4d = array_ops_1.ArrayOps.tensor4d;
+exports.tensor5d = array_ops_1.ArrayOps.tensor5d;
+exports.tensor6d = array_ops_1.ArrayOps.tensor6d;
 exports.print = array_ops_1.ArrayOps.print;
 exports.expandDims = array_ops_1.ArrayOps.expandDims;
 exports.stack = array_ops_1.ArrayOps.stack;
@@ -182,6 +189,7 @@ exports.movingAverage = moving_average_1.MovingAverageOps.movingAverage;
 exports.basicLSTMCell = lstm_1.LSTMOps.basicLSTMCell;
 exports.multiRNNCell = lstm_1.LSTMOps.multiRNNCell;
 exports.softmax = softmax_1.SoftmaxOps.softmax;
+exports.sigmoidCrossEntropyWithLogits = sigmoid_cross_entropy_1.SigmoidCrossEntropyOps.sigmoidCrossEntropyWithLogits;
 exports.localResponseNormalization = lrn_1.LRNOps.localResponseNormalization;
 exports.linalg = linalg_ops_1.LinalgOps;
 var operation_1 = require("./operation");
@@ -195,6 +203,7 @@ exports.losses = {
     computeWeightedLoss: loss_ops_1.LossOps.computeWeightedLoss,
     cosineDistance: loss_ops_1.LossOps.cosineDistance,
     hingeLoss: loss_ops_1.LossOps.hingeLoss,
+    huberLoss: loss_ops_1.LossOps.huberLoss,
     logLoss: loss_ops_1.LossOps.logLoss,
     meanSquaredError: loss_ops_1.LossOps.meanSquaredError,
     softmaxCrossEntropy: softmax_1.SoftmaxOps.softmaxCrossEntropy

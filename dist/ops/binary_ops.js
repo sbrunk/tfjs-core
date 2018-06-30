@@ -137,6 +137,13 @@ var BinaryOps = (function () {
     BinaryOps.div = function (a, b) {
         util.assertArgumentsAreTensors({ a: a, b: b }, 'div');
         util.assertTypesMatch(a, b);
+        var forwardFunc;
+        if (a.dtype === 'int32' && b.dtype === 'int32') {
+            return BinaryOps.floorDiv(a, b);
+        }
+        else {
+            forwardFunc = function (backend) { return backend.realDivide(a, b); };
+        }
         var outShape = broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
         var der = function (dy) {
             var derA = function () {
@@ -158,7 +165,34 @@ var BinaryOps = (function () {
             };
             return { a: derA, b: derB };
         };
-        return environment_1.ENV.engine.runKernel(function (backend) { return backend.divide(a, b); }, { a: a, b: b }, der);
+        return environment_1.ENV.engine.runKernel(forwardFunc, { a: a, b: b }, der);
+    };
+    BinaryOps.floorDiv = function (a, b) {
+        util.assertArgumentsAreTensors({ a: a, b: b }, 'floorDiv');
+        util.assertTypesMatch(a, b);
+        var forwardFunc = function (backend) { return backend.floorDiv(a, b); };
+        var outShape = broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
+        var der = function (dy) {
+            var derA = function () {
+                var res = dy.div(b.toFloat());
+                var reduceAxes = broadcast_util.getReductionAxes(a.shape, outShape);
+                if (reduceAxes.length > 0) {
+                    return res.sum(reduceAxes).reshape(a.shape);
+                }
+                return res;
+            };
+            var derB = function () {
+                var res = dy.mul(a.toFloat());
+                var reduceAxes = broadcast_util.getReductionAxes(b.shape, outShape);
+                if (reduceAxes.length > 0) {
+                    res = res.sum(reduceAxes).reshape(b.shape);
+                }
+                var tmp = b.square();
+                return res.div(tmp.toFloat()).neg();
+            };
+            return { a: derA, b: derB };
+        };
+        return environment_1.ENV.engine.runKernel(forwardFunc, { a: a, b: b }, der);
     };
     BinaryOps.divStrict = function (a, b) {
         util.assertShapesMatch(a.shape, b.shape, 'Error in divideStrict: ');
@@ -310,6 +344,10 @@ var BinaryOps = (function () {
         operation_1.operation
     ], BinaryOps, "div", null);
     __decorate([
+        doc_1.doc({ heading: 'Operations', subheading: 'Arithmetic' }),
+        operation_1.operation
+    ], BinaryOps, "floorDiv", null);
+    __decorate([
         operation_1.operation
     ], BinaryOps, "divStrict", null);
     __decorate([
@@ -341,6 +379,7 @@ var BinaryOps = (function () {
         operation_1.operation
     ], BinaryOps, "squaredDifferenceStrict", null);
     __decorate([
+        doc_1.doc({ heading: 'Operations', subheading: 'Basic math' }),
         operation_1.operation
     ], BinaryOps, "atan2", null);
     return BinaryOps;

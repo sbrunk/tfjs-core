@@ -13,6 +13,8 @@ var Rank;
     Rank["R2"] = "R2";
     Rank["R3"] = "R3";
     Rank["R4"] = "R4";
+    Rank["R5"] = "R5";
+    Rank["R6"] = "R6";
 })(Rank = exports.Rank || (exports.Rank = {}));
 var UpcastInt32AndMap;
 (function (UpcastInt32AndMap) {

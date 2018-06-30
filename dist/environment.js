@@ -21,18 +21,21 @@ exports.URL_PROPERTIES = [
     { name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION', type: Type.NUMBER },
     { name: 'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', type: Type.BOOLEAN },
     { name: 'WEBGL_VERSION', type: Type.NUMBER },
-    { name: 'WEBGL_FLOAT_TEXTURE_ENABLED', type: Type.BOOLEAN }, {
+    { name: 'WEBGL_RENDER_FLOAT32_ENABLED', type: Type.BOOLEAN },
+    { name: 'WEBGL_DOWNLOAD_FLOAT_ENABLED', type: Type.BOOLEAN }, {
         name: 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED',
         type: Type.BOOLEAN
     },
     { name: 'BACKEND', type: Type.STRING }
 ];
+var TEST_EPSILON_FLOAT32_ENABLED = 1e-3;
+var TEST_EPSILON_FLOAT32_DISABLED = 1e-1;
 function hasExtension(gl, extensionName) {
     var ext = gl.getExtension(extensionName);
     return ext != null;
 }
 function getWebGLRenderingContext(webGLVersion) {
-    if (webGLVersion === 0) {
+    if (webGLVersion === 0 || !exports.ENV.get('IS_BROWSER')) {
         throw new Error('Cannot get WebGL rendering context, WebGL is disabled.');
     }
     var tempCanvas = document.createElement('canvas');
@@ -52,7 +55,13 @@ function loseContext(gl) {
     }
 }
 function isWebGLVersionEnabled(webGLVersion) {
-    var gl = getWebGLRenderingContext(webGLVersion);
+    var gl;
+    try {
+        gl = getWebGLRenderingContext(webGLVersion);
+    }
+    catch (e) {
+        return false;
+    }
     if (gl != null) {
         loseContext(gl);
         return true;
@@ -80,7 +89,16 @@ function getWebGLDisjointQueryTimerVersion(webGLVersion) {
     }
     return queryTimerVersion;
 }
-function isFloatTextureReadPixelsEnabled(webGLVersion) {
+function createFloatTextureAndBindToFramebuffer(gl, webGLVersion) {
+    var frameBuffer = gl.createFramebuffer();
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    var internalFormat = webGLVersion === 2 ? gl.RGBA32F : gl.RGBA;
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+}
+function isRenderToFloatTextureEnabled(webGLVersion) {
     if (webGLVersion === 0) {
         return false;
     }
@@ -95,18 +113,31 @@ function isFloatTextureReadPixelsEnabled(webGLVersion) {
             return false;
         }
     }
-    var frameBuffer = gl.createFramebuffer();
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    var internalFormat = webGLVersion === 2 ? gl.RGBA32F : gl.RGBA;
-    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    var frameBufferComplete = (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE);
+    createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
+    var isFrameBufferComplete = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    loseContext(gl);
+    return isFrameBufferComplete;
+}
+function isDownloadFloatTextureEnabled(webGLVersion) {
+    if (webGLVersion === 0) {
+        return false;
+    }
+    var gl = getWebGLRenderingContext(webGLVersion);
+    if (webGLVersion === 1) {
+        if (!hasExtension(gl, 'OES_texture_float')) {
+            return false;
+        }
+    }
+    else {
+        if (!hasExtension(gl, 'EXT_color_buffer_float')) {
+            return false;
+        }
+    }
+    createFloatTextureAndBindToFramebuffer(gl, webGLVersion);
     gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, new Float32Array(4));
     var readPixelsNoError = gl.getError() === gl.NO_ERROR;
     loseContext(gl);
-    return frameBufferComplete && readPixelsNoError;
+    return readPixelsNoError;
 }
 function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion) {
     if (webGLVersion > 0) {
@@ -119,6 +150,10 @@ function isWebGLGetBufferSubDataAsyncExtensionEnabled(webGLVersion) {
     var isEnabled = hasExtension(gl, 'WEBGL_get_buffer_sub_data_async');
     loseContext(gl);
     return isEnabled;
+}
+function isChrome() {
+    return navigator != null && navigator.userAgent != null &&
+        /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 }
 var Environment = (function () {
     function Environment(features) {
@@ -157,6 +192,9 @@ var Environment = (function () {
         this.features[feature] = this.evaluateFeature(feature);
         return this.features[feature];
     };
+    Environment.prototype.getFeatures = function () {
+        return this.features;
+    };
     Environment.prototype.set = function (feature, value) {
         this.features[feature] = value;
     };
@@ -181,6 +219,13 @@ var Environment = (function () {
         else if (feature === 'IS_BROWSER') {
             return typeof window !== 'undefined';
         }
+        else if (feature === 'IS_NODE') {
+            return (typeof process !== 'undefined') &&
+                (typeof process.versions.node !== 'undefined');
+        }
+        else if (feature === 'IS_CHROME') {
+            return isChrome();
+        }
         else if (feature === 'BACKEND') {
             return this.getBestBackendType();
         }
@@ -204,11 +249,20 @@ var Environment = (function () {
             }
             return 0;
         }
-        else if (feature === 'WEBGL_FLOAT_TEXTURE_ENABLED') {
-            return isFloatTextureReadPixelsEnabled(this.get('WEBGL_VERSION'));
+        else if (feature === 'WEBGL_RENDER_FLOAT32_ENABLED') {
+            return isRenderToFloatTextureEnabled(this.get('WEBGL_VERSION'));
+        }
+        else if (feature === 'WEBGL_DOWNLOAD_FLOAT_ENABLED') {
+            return isDownloadFloatTextureEnabled(this.get('WEBGL_VERSION'));
         }
         else if (feature === 'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED') {
             return isWebGLGetBufferSubDataAsyncExtensionEnabled(this.get('WEBGL_VERSION'));
+        }
+        else if (feature === 'TEST_EPSILON') {
+            if (this.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+                return TEST_EPSILON_FLOAT32_ENABLED;
+            }
+            return TEST_EPSILON_FLOAT32_DISABLED;
         }
         throw new Error("Unknown feature " + feature + ".");
     };
@@ -218,16 +272,12 @@ var Environment = (function () {
     Environment.prototype.reset = function () {
         this.features = getFeaturesFromURL();
         if (this.globalEngine != null) {
-            this.globalEngine.dispose();
             this.globalEngine = null;
         }
     };
     Environment.prototype.initBackend = function (backendType, safeMode) {
         if (safeMode === void 0) { safeMode = false; }
         this.currentBackend = backendType;
-        if (this.globalEngine != null) {
-            this.globalEngine.dispose();
-        }
         var backend = exports.ENV.findBackend(backendType);
         this.globalEngine = new engine_1.Engine(backend, safeMode);
     };
@@ -248,7 +298,8 @@ var Environment = (function () {
             return true;
         }
         catch (err) {
-            console.warn(err.message);
+            console.warn("Registration of backend " + name + " failed");
+            console.warn(err.stack || err.message);
             return false;
         }
     };

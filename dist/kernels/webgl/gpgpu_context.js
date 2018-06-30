@@ -47,6 +47,7 @@ var GPGPUContext = (function () {
         this.disposed = false;
         this.autoDebugValidate = false;
         this.vertexAttrsAreBound = false;
+        this.itemsToPoll = [];
         if (gl != null) {
             this.gl = gl;
         }
@@ -58,6 +59,12 @@ var GPGPUContext = (function () {
                 webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_float');
             this.colorBufferFloatExtension =
                 this.gl.getExtension('WEBGL_color_buffer_float');
+            if (!environment_1.ENV.get('WEBGL_RENDER_FLOAT32_ENABLED')) {
+                this.textureHalfFloatExtension =
+                    webgl_util.getExtensionOrThrow(this.gl, 'OES_texture_half_float');
+                this.colorBufferHalfFloatExtension =
+                    this.gl.getExtension('EXT_color_buffer_half_float');
+            }
         }
         else {
             this.colorBufferFloatExtension =
@@ -72,6 +79,8 @@ var GPGPUContext = (function () {
         this.vertexBuffer = gpgpu_util.createVertexBuffer(this.gl);
         this.indexBuffer = gpgpu_util.createIndexBuffer(this.gl);
         this.framebuffer = webgl_util.createFramebuffer(this.gl);
+        this.textureConfig =
+            gpgpu_util.getTextureConfig(this.gl, this.textureHalfFloatExtension);
     }
     GPGPUContext.prototype.dispose = function () {
         var _this = this;
@@ -104,9 +113,17 @@ var GPGPUContext = (function () {
         this.autoDebugValidate = enabled;
         webgl_util.enableDebugWebGLErrorChecking(enabled);
     };
-    GPGPUContext.prototype.createMatrixTexture = function (rows, columns) {
+    GPGPUContext.prototype.createFloat32MatrixTexture = function (rows, columns) {
         this.throwIfDisposed();
-        return gpgpu_util.createMatrixTexture(this.gl, rows, columns);
+        return gpgpu_util.createFloat32MatrixTexture(this.gl, rows, columns, this.textureConfig);
+    };
+    GPGPUContext.prototype.createFloat16MatrixTexture = function (rows, columns) {
+        this.throwIfDisposed();
+        return gpgpu_util.createFloat16MatrixTexture(this.gl, rows, columns, this.textureConfig);
+    };
+    GPGPUContext.prototype.createUnsignedBytesMatrixTexture = function (rows, columns) {
+        this.throwIfDisposed();
+        return gpgpu_util.createUnsignedBytesMatrixTexture(this.gl, rows, columns, this.textureConfig);
     };
     GPGPUContext.prototype.uploadPixelDataToTexture = function (texture, pixels) {
         this.throwIfDisposed();
@@ -114,7 +131,7 @@ var GPGPUContext = (function () {
     };
     GPGPUContext.prototype.createPackedMatrixTexture = function (rows, columns) {
         this.throwIfDisposed();
-        return gpgpu_util.createPackedMatrixTexture(this.gl, rows, columns);
+        return gpgpu_util.createPackedMatrixTexture(this.gl, rows, columns, this.textureConfig);
     };
     GPGPUContext.prototype.deleteMatrixTexture = function (texture) {
         var _this = this;
@@ -127,18 +144,20 @@ var GPGPUContext = (function () {
     };
     GPGPUContext.prototype.uploadMatrixToTexture = function (texture, rows, columns, matrix) {
         this.throwIfDisposed();
-        var numChannels = 1;
-        return gpgpu_util.uploadMatrixToTexture(this.gl, texture, rows, columns, matrix, numChannels);
+        var numChannels = webgl_util.getNumChannels();
+        return gpgpu_util.uploadMatrixToTexture(this.gl, texture, rows, columns, matrix, numChannels, this.textureConfig);
     };
     GPGPUContext.prototype.uploadMatrixToPackedTexture = function (texture, rows, columns, matrix) {
         this.throwIfDisposed();
-        return gpgpu_util.uploadMatrixToPackedTexture(this.gl, texture, rows, columns, matrix);
+        return gpgpu_util.uploadMatrixToPackedTexture(this.gl, texture, rows, columns, matrix, this.textureConfig);
     };
-    GPGPUContext.prototype.downloadMatrixFromTexture = function (texture, rows, columns) {
+    GPGPUContext.prototype.downloadFloat32MatrixFromOutputTexture = function (texture, rows, columns) {
         var _this = this;
-        return this.downloadMatrixDriver(texture, function () {
-            return gpgpu_util.downloadMatrixFromOutputTexture(_this.gl, rows, columns);
-        });
+        return this.downloadMatrixDriver(texture, function () { return gpgpu_util.downloadFloat32MatrixFromOutputTexture(_this.gl, rows, columns, _this.textureConfig); });
+    };
+    GPGPUContext.prototype.downloadByteEncodedFloatMatrixFromOutputTexture = function (texture, rows, columns) {
+        var _this = this;
+        return this.downloadMatrixDriver(texture, function () { return gpgpu_util.downloadByteEncodedFloatMatrixFromOutputTexture(_this.gl, rows, columns, _this.textureConfig); });
     };
     GPGPUContext.prototype.downloadMatrixFromTextureAsync = function (texture, rows, columns) {
         return __awaiter(this, void 0, void 0, function () {
@@ -148,17 +167,13 @@ var GPGPUContext = (function () {
                     throw new Error("Cannot download matrix from output texture asynchronously, " +
                         "WEBGL_get_buffer_sub_data_async is not enabled.");
                 }
-                return [2, this.downloadMatrixDriverAsync(texture, function () { return gpgpu_util.downloadMatrixFromOutputTextureAsync(_this.gl, _this.getBufferSubDataAsyncExtension, rows, columns); })];
+                return [2, this.downloadMatrixDriverAsync(texture, function () { return gpgpu_util.downloadMatrixFromOutputTextureAsync(_this.gl, _this.getBufferSubDataAsyncExtension, rows, columns, _this.textureConfig); })];
             });
         });
     };
-    GPGPUContext.prototype.downloadMatrixFromRGBAColorTexture = function (texture, rows, columns, channels) {
-        var _this = this;
-        return this.downloadMatrixDriver(texture, function () { return gpgpu_util.downloadMatrixFromRGBAColorTexture(_this.gl, rows, columns, channels); });
-    };
     GPGPUContext.prototype.downloadMatrixFromPackedTexture = function (texture, rows, columns) {
         var _this = this;
-        return this.downloadMatrixDriver(texture, function () { return gpgpu_util.downloadMatrixFromPackedOutputTexture(_this.gl, rows, columns); });
+        return this.downloadMatrixDriver(texture, function () { return gpgpu_util.downloadMatrixFromPackedOutputTexture(_this.gl, rows, columns, _this.textureConfig); });
     };
     GPGPUContext.prototype.createProgram = function (fragmentShaderSource) {
         this.throwIfDisposed();
@@ -307,27 +322,44 @@ var GPGPUContext = (function () {
             var gl2 = this.gl;
             var ext = this.getQueryTimerExtensionWebGL2();
             var available = gl2.getQueryParameter(query, gl2.QUERY_RESULT_AVAILABLE);
-            var disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-            return available && !disjoint;
+            if (this.disjoint == null) {
+                this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+            }
+            return available && !this.disjoint;
         }
         else {
             var ext = this.getQueryTimerExtensionWebGL1();
             var available = ext.getQueryObjectEXT(query, ext.QUERY_RESULT_AVAILABLE_EXT);
-            var disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
-            return available && !disjoint;
+            if (this.disjoint == null) {
+                this.disjoint = this.gl.getParameter(ext.GPU_DISJOINT_EXT);
+            }
+            return available && !this.disjoint;
         }
     };
     GPGPUContext.prototype.pollQueryTime = function (query) {
         var _this = this;
-        return new Promise(function (resolve, reject) {
-            var resolveWithWarning = function () {
-                console.warn('Disjoint query timer never available.');
-                resolve(-1);
-            };
+        return new Promise(function (resolve) {
             var queryTimerVersion = environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION');
-            util.repeatedTry(function () { return _this.isQueryAvailable(query, queryTimerVersion); })
-                .then(function () { return resolve(_this.getQueryTime(query, queryTimerVersion)); })
-                .catch(resolveWithWarning);
+            _this.addItemToPoll(function () { return _this.isQueryAvailable(query, queryTimerVersion); }, function () { return resolve(_this.getQueryTime(query, queryTimerVersion)); });
+        });
+    };
+    GPGPUContext.prototype.pollItems = function () {
+        var index = binSearchLastTrue(this.itemsToPoll.map(function (x) { return x.isDoneFn; }));
+        for (var i = 0; i <= index; ++i) {
+            var resolveFn = this.itemsToPoll[i].resolveFn;
+            resolveFn();
+        }
+        this.itemsToPoll = this.itemsToPoll.slice(index + 1);
+    };
+    GPGPUContext.prototype.addItemToPoll = function (isDoneFn, resolveFn) {
+        var _this = this;
+        this.itemsToPoll.push({ isDoneFn: isDoneFn, resolveFn: resolveFn });
+        if (this.itemsToPoll.length > 1) {
+            return;
+        }
+        util.repeatedTry(function () {
+            _this.pollItems();
+            return _this.itemsToPoll.length === 0;
         });
     };
     GPGPUContext.prototype.getQueryTime = function (query, queryTimerVersion) {
@@ -414,4 +446,22 @@ var GPGPUContext = (function () {
     return GPGPUContext;
 }());
 exports.GPGPUContext = GPGPUContext;
+function binSearchLastTrue(arr) {
+    var start = 0;
+    var end = arr.length - 1;
+    var best = -1;
+    while (start <= end) {
+        var mid = (start + end) >> 1;
+        var isDone = arr[mid]();
+        if (isDone) {
+            best = mid;
+            start = mid + 1;
+        }
+        else {
+            end = mid - 1;
+        }
+    }
+    return best;
+}
+exports.binSearchLastTrue = binSearchLastTrue;
 //# sourceMappingURL=gpgpu_context.js.map

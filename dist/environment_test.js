@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var device_util = require("./device_util");
 var environment_1 = require("./environment");
+var jasmine_util_1 = require("./jasmine_util");
 var backend_cpu_1 = require("./kernels/backend_cpu");
 var backend_webgl_1 = require("./kernels/backend_webgl");
 var test_util_1 = require("./test_util");
-var jasmine_util_1 = require("./jasmine_util");
 jasmine_util_1.describeWithFlags('disjoint query timer enabled', test_util_1.WEBGL_ENVS, function () {
     afterEach(function () {
         environment_1.ENV.reset();
@@ -168,6 +168,9 @@ jasmine_util_1.describeWithFlags('WebGL version', test_util_1.WEBGL_ENVS, functi
     });
 });
 describe('Backend', function () {
+    beforeAll(function () {
+        spyOn(console, 'warn');
+    });
     afterEach(function () {
         environment_1.ENV.reset();
     });
@@ -182,8 +185,8 @@ describe('Backend', function () {
     });
     it('webgl not supported, falls back to cpu', function () {
         environment_1.ENV.setFeatures({ 'WEBGL_VERSION': 0 });
-        environment_1.ENV.registerBackend('custom-cpu', function () { return new backend_cpu_1.MathBackendCPU(); }, 3);
-        var success = environment_1.ENV.registerBackend('custom-webgl', function () { return new backend_webgl_1.MathBackendWebGL(); }, 4);
+        environment_1.ENV.registerBackend('custom-cpu', function () { return new backend_cpu_1.MathBackendCPU(); }, 103);
+        var success = environment_1.ENV.registerBackend('custom-webgl', function () { return new backend_webgl_1.MathBackendWebGL(); }, 104);
         expect(success).toBe(false);
         expect(environment_1.ENV.findBackend('custom-webgl') == null).toBe(true);
         expect(environment_1.ENV.getBestBackendType()).toBe('custom-cpu');

@@ -9,6 +9,7 @@ export declare class BinaryOps {
     static mul<T extends Tensor>(a: Tensor, b: Tensor): T;
     static mulStrict<T extends Tensor>(a: T, b: T): T;
     static div<T extends Tensor>(a: Tensor, b: Tensor): T;
+    static floorDiv<T extends Tensor>(a: Tensor, b: Tensor): T;
     static divStrict<T extends Tensor>(a: T, b: T): T;
     static mod<T extends Tensor>(a: Tensor, b: Tensor): T;
     static modStrict<T extends Tensor>(a: T, b: T): T;

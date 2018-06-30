@@ -104,10 +104,10 @@ function concatenateTypedArrays(xs) {
     var totalByteLength = 0;
     xs.forEach(function (x) {
         if (x instanceof Float32Array || x instanceof Int32Array) {
-            totalByteLength += x.length * 4;
+            totalByteLength += x.buffer.byteLength;
         }
         else if (x instanceof Uint8Array) {
-            totalByteLength += x.length;
+            totalByteLength += x.buffer.byteLength;
         }
         else {
             throw new Error("Unsupported TypedArray subtype: " + x.constructor.name);
@@ -117,12 +117,7 @@ function concatenateTypedArrays(xs) {
     var offset = 0;
     xs.forEach(function (x) {
         y.set(new Uint8Array(x.buffer), offset);
-        if (x instanceof Float32Array || x instanceof Int32Array) {
-            offset += x.length * 4;
-        }
-        else {
-            offset += x.length;
-        }
+        offset += x.buffer.byteLength;
     });
     return y.buffer;
 }

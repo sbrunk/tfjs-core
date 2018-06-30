@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 var matmul_1 = require("./matmul");
 jasmine_util_1.describeWithFlags('matmul', test_util_1.ALL_ENVS, function () {
     it('A x B', function () {
@@ -310,6 +310,54 @@ jasmine_util_1.describeWithFlags('matmul webgl-only', test_util_1.WEBGL_ENVS, fu
         var result = tf.matrixTimesVector(matrix.toTensor(), v.toTensor());
         var expected = [2, 0];
         test_util_1.expectArraysClose(result, expected);
+    });
+});
+jasmine_util_1.describeWithFlags('dot', test_util_1.ALL_ENVS, function () {
+    var a;
+    var b;
+    var c;
+    var d;
+    var e;
+    beforeEach(function () {
+        a = tf.tensor1d([1, 2]);
+        b = tf.tensor2d([[1, 2], [3, 4]]);
+        c = tf.tensor2d([[1, 2, 3], [4, 5, 6]]);
+        d = tf.tensor3d([1, 2], [1, 1, 2]);
+        e = tf.scalar(1);
+    });
+    it('vector-vector', function () {
+        var aa = tf.dot(a, a);
+        test_util_1.expectArraysClose(aa, [5]);
+        expect(aa.shape).toEqual([]);
+    });
+    it('vector-matrix', function () {
+        var ab = tf.dot(a, b);
+        var ac = tf.dot(a, c);
+        expect(ab.shape).toEqual([2]);
+        expect(ac.shape).toEqual([3]);
+        test_util_1.expectArraysClose(ab, [7, 10]);
+        test_util_1.expectArraysClose(ac, [9, 12, 15]);
+    });
+    it('matrix-vector', function () {
+        var ba = b.dot(a);
+        expect(ba.shape).toEqual([2]);
+        test_util_1.expectArraysClose(ba, [5, 11]);
+    });
+    it('matrix-matrix', function () {
+        var bb = tf.dot(b, b);
+        var bc = tf.dot(b, c);
+        expect(bb.shape).toEqual([2, 2]);
+        expect(bc.shape).toEqual([2, 3]);
+        test_util_1.expectArraysClose(bb, [7, 10, 15, 22]);
+        test_util_1.expectArraysClose(bc, [9, 12, 15, 19, 26, 33]);
+    });
+    it('throws error on incompatible dimensions', function () {
+        expect(function () { return tf.dot(c, a); }).toThrowError();
+        expect(function () { return tf.dot(c, b); }).toThrowError();
+    });
+    it('throws error when inputs are not rank 1 or 2', function () {
+        expect(function () { return tf.dot(a, d); }).toThrowError();
+        expect(function () { return tf.dot(a, e); }).toThrowError();
     });
 });
 //# sourceMappingURL=matmul_test.js.map

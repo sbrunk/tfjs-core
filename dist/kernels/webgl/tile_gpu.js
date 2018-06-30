@@ -19,13 +19,13 @@ var TileProgram = (function () {
 exports.TileProgram = TileProgram;
 function getSourceCoords(aShape) {
     var rank = aShape.length;
-    if (rank > 4) {
+    if (rank > 5) {
         throw Error("Tile for rank " + rank + " is not yet supported");
     }
     if (rank === 1) {
         return "imod(resRC, " + aShape[0] + ")";
     }
-    var currentCoords = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w'];
+    var currentCoords = ['resRC.x', 'resRC.y', 'resRC.z', 'resRC.w', 'resRC.u'];
     var sourceCoords = [];
     for (var i = 0; i < aShape.length; i++) {
         sourceCoords.push("imod(" + currentCoords[i] + ", " + aShape[i] + ")");

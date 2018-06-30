@@ -8,9 +8,11 @@ export declare class ModelStoreManagerRegistry {
     static getManager(scheme: string): ModelStoreManager;
     static getSchemes(): string[];
 }
-export declare function listModels(): Promise<{
-    [url: string]: ModelArtifactsInfo;
-}>;
-export declare function removeModel(url: string): Promise<ModelArtifactsInfo>;
-export declare function copyModel(sourceURL: string, destURL: string): Promise<ModelArtifactsInfo>;
-export declare function moveModel(sourceURL: string, destURL: string): Promise<ModelArtifactsInfo>;
+export declare class ModelManagement {
+    static listModels(): Promise<{
+        [url: string]: ModelArtifactsInfo;
+    }>;
+    static removeModel(url: string): Promise<ModelArtifactsInfo>;
+    static copyModel(sourceURL: string, destURL: string): Promise<ModelArtifactsInfo>;
+    static moveModel(sourceURL: string, destURL: string): Promise<ModelArtifactsInfo>;
+}

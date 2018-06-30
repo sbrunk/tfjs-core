@@ -1,25 +1,35 @@
-import { TimingInfo } from '../engine';
+import { MemoryInfo, TimingInfo } from '../engine';
 import { Conv2DInfo } from '../ops/conv_util';
 import { DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D } from '../tensor';
 import * as types from '../types';
 import { DataType, TypedArray } from '../types';
 import { KernelBackend } from './backend';
 import { GPGPUContext } from './webgl/gpgpu_context';
-import { TextureData } from './webgl/tex_util';
 import { TextureManager } from './webgl/texture_manager';
 export interface CPUTimerQuery {
     startMs: number;
     endMs?: number;
 }
+export interface WebGLMemoryInfo extends MemoryInfo {
+    numBytesInGPU: number;
+    unreliable: boolean;
+}
 export interface WebGLTimingInfo extends TimingInfo {
     uploadWaitMs: number;
     downloadWaitMs: number;
 }
+export declare const SIZE_UPLOAD_UNIFORM = 32;
 export declare class MathBackendWebGL implements KernelBackend {
     private gpgpu;
     private delayedStorage;
     private texData;
+    private pendingRead;
+    private pendingDisposal;
+    private lruDataGPU;
+    private numBytesInGPU;
+    private NUM_BYTES_BEFORE_PAGING;
     private canvas;
+    private fromPixelsCanvas;
     private programTimersStack;
     private activeTimers;
     private uploadWaitMs;
@@ -30,15 +40,12 @@ export declare class MathBackendWebGL implements KernelBackend {
     readSync(dataId: DataId): TypedArray;
     read(dataId: DataId): Promise<TypedArray>;
     time(f: () => void): Promise<WebGLTimingInfo>;
-    memory(): {
-        unreliable: boolean;
-    };
+    memory(): WebGLMemoryInfo;
     private startTimer();
     private endTimer(query);
     private getQueryTime(query);
     disposeData(dataId: DataId): void;
     getTexture(dataId: DataId): WebGLTexture;
-    getTextureData(dataId: DataId): TextureData;
     private textureManager;
     private binaryCache;
     private gpgpuCreatedLocally;
@@ -61,6 +68,8 @@ export declare class MathBackendWebGL implements KernelBackend {
     private reduce(x, reduceType, dtype);
     private argReduce(x, reduceType, bestIndicesA?);
     sum(x: Tensor, axes: number[]): Tensor;
+    unsortedSegmentSum<T extends Tensor>(x: T, segmentIds: Tensor1D, numSegments: number): Tensor;
+    private segOpCompute(x, segOpType, segmentIds, dtype, numSegments);
     argMin(x: Tensor, axis: number): Tensor;
     argMax(x: Tensor, axis: number): Tensor;
     cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
@@ -81,8 +90,10 @@ export declare class MathBackendWebGL implements KernelBackend {
     mod(a: Tensor, b: Tensor): Tensor;
     max(x: Tensor, axes: number[]): Tensor;
     maximum(a: Tensor, b: Tensor): Tensor;
+    all(x: Tensor, axes: number[]): Tensor;
     squaredDifference(a: Tensor, b: Tensor): Tensor;
-    divide(a: Tensor, b: Tensor): Tensor;
+    realDivide(a: Tensor, b: Tensor): Tensor;
+    floorDiv(a: Tensor, b: Tensor): Tensor;
     add(a: Tensor, b: Tensor): Tensor;
     subtract(a: Tensor, b: Tensor): Tensor;
     pow<T extends Tensor>(a: T, b: Tensor): T;
@@ -126,6 +137,8 @@ export declare class MathBackendWebGL implements KernelBackend {
     conv2dDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     conv2dDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     depthwiseConv2D(x: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerInput(dy: Tensor4D, filter: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
+    depthwiseConv2DDerFilter(x: Tensor4D, dy: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
@@ -146,4 +159,7 @@ export declare class MathBackendWebGL implements KernelBackend {
     private throwIfNoData(dataId);
     private uploadToGPU(dataId);
     private cacheOnCPU(dataId, float32Values?);
+    private releaseTexture(dataId, texture, texShape, texType);
+    private acquireTexture(dataId, texShape, texType);
+    private computeBytes(shape, dtype);
 }

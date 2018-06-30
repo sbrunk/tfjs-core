@@ -1,5 +1,5 @@
-import { Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, TensorBuffer } from '../tensor';
-import { DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TypedArray } from '../types';
+import { Scalar, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D, TensorBuffer } from '../tensor';
+import { DataType, Rank, ShapeMap, TensorLike, TensorLike1D, TensorLike2D, TensorLike3D, TensorLike4D, TensorLike5D, TensorLike6D, TypedArray } from '../types';
 export declare class ArrayOps {
     static tensor<R extends Rank>(values: TensorLike, shape?: ShapeMap[R], dtype?: DataType): Tensor<R>;
     static scalar(value: number | boolean, dtype?: DataType): Scalar;
@@ -7,6 +7,8 @@ export declare class ArrayOps {
     static tensor2d(values: TensorLike2D, shape?: [number, number], dtype?: DataType): Tensor2D;
     static tensor3d(values: TensorLike3D, shape?: [number, number, number], dtype?: DataType): Tensor3D;
     static tensor4d(values: TensorLike4D, shape?: [number, number, number, number], dtype?: DataType): Tensor4D;
+    static tensor5d(values: TensorLike5D, shape?: [number, number, number, number, number], dtype?: DataType): Tensor5D;
+    static tensor6d(values: TensorLike6D, shape?: [number, number, number, number, number, number], dtype?: DataType): Tensor6D;
     static ones<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R>;
     static zeros<R extends Rank>(shape: ShapeMap[R], dtype?: DataType): Tensor<R>;
     static fill<R extends Rank>(shape: ShapeMap[R], value: number, dtype?: DataType): Tensor<R>;

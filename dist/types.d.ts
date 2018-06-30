@@ -10,6 +10,8 @@ export interface ShapeMap {
     R2: [number, number];
     R3: [number, number, number];
     R4: [number, number, number, number];
+    R5: [number, number, number, number, number];
+    R6: [number, number, number, number, number, number];
 }
 export interface DataTypeMap {
     float32: Float32Array;
@@ -24,14 +26,18 @@ export declare enum Rank {
     R2 = "R2",
     R3 = "R3",
     R4 = "R4",
+    R5 = "R5",
+    R6 = "R6",
 }
-export declare type TensorLike = TypedArray | number | boolean | number[] | number[][] | number[][][] | number[][][][] | boolean[] | boolean[][] | boolean[][][] | boolean[][][][];
+export declare type TensorLike = TypedArray | number | boolean | number[] | number[][] | number[][][] | number[][][][] | number[][][][][] | number[][][][][][] | boolean[] | boolean[][] | boolean[][][] | boolean[][][][] | boolean[][][][][] | boolean[][][][][][];
 export declare type TensorLike1D = TypedArray | number[] | boolean[];
 export declare type TensorLike2D = TypedArray | number[] | number[][] | boolean[] | boolean[][];
 export declare type TensorLike3D = TypedArray | number[] | number[][][] | boolean[] | boolean[][][];
 export declare type TensorLike4D = TypedArray | number[] | number[][][][] | boolean[] | boolean[][][][];
+export declare type TensorLike5D = TypedArray | number[] | number[][][][][] | boolean[] | boolean[][][][][];
+export declare type TensorLike6D = TypedArray | number[] | number[][][][][][] | boolean[] | boolean[][][][][][];
 export declare type FlatVector = boolean[] | number[] | TypedArray;
-export declare type RegularArray<T> = T[] | T[][] | T[][][] | T[][][][];
+export declare type RegularArray<T> = T[] | T[][] | T[][][] | T[][][][] | T[][][][][] | T[][][][][][];
 export declare type ArrayData<D extends DataType> = DataTypeMap[D] | RegularArray<number> | RegularArray<boolean>;
 export interface RecursiveArray<T extends any> {
     [index: number]: T | RecursiveArray<T>;
@@ -49,4 +55,19 @@ export interface TensorContainerObject {
     [x: string]: TensorContainer;
 }
 export interface TensorContainerArray extends Array<TensorContainer> {
+}
+export interface ModelPredictConfig {
+    batchSize?: number;
+    verbose?: boolean;
+}
+export interface TensorInfo {
+    name: string;
+    shape?: number[];
+    dtype: DataType;
+}
+export interface InferenceModel {
+    readonly inputs: TensorInfo[];
+    readonly outputs: TensorInfo[];
+    predict(inputs: Tensor | Tensor[] | NamedTensorMap, config: ModelPredictConfig): Tensor | Tensor[] | NamedTensorMap;
+    execute(inputs: Tensor | Tensor[] | NamedTensorMap, outputs: string | string[]): Tensor | Tensor[];
 }

@@ -4,7 +4,7 @@ var tf = require("../index");
 var jasmine_util_1 = require("../jasmine_util");
 var test_util_1 = require("../test_util");
 var reduce_util = require("./reduce_util");
-jasmine_util_1.describeWithFlags('min', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: min', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
         var a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
         test_util_1.expectNumbersClose(tf.min(a).get(), -7);
@@ -53,7 +53,7 @@ jasmine_util_1.describeWithFlags('min', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'min' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('max', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: max', test_util_1.ALL_ENVS, function () {
     it('with one element dominating', function () {
         var a = tf.tensor1d([3, -1, 0, 100, -7, 2]);
         var r = tf.max(a);
@@ -65,7 +65,7 @@ jasmine_util_1.describeWithFlags('max', test_util_1.ALL_ENVS, function () {
         test_util_1.expectNumbersClose(r.get(), 3);
     });
     it('ignores NaNs', function () {
-        expect(tf.max(tf.tensor1d([3, NaN, 2])).get()).toEqual(3);
+        test_util_1.expectNumbersClose(tf.max(tf.tensor1d([3, NaN, 2])).get(), 3);
     });
     it('2D', function () {
         var a = tf.tensor2d([3, -1, 0, 100, -7, 2], [2, 3]);
@@ -102,12 +102,21 @@ jasmine_util_1.describeWithFlags('max', test_util_1.ALL_ENVS, function () {
         var r = tf.max(a, [1]);
         test_util_1.expectArraysClose(r, [5, 100]);
     });
+    it('6D, axis=[5]', function () {
+        var a = tf.range(0, 64).reshape([2, 2, 2, 2, 2, 2]);
+        var r = tf.max(a, [5]);
+        var expectedResult = [
+            1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31,
+            33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63
+        ];
+        test_util_1.expectArraysClose(r, expectedResult);
+    });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.max({}); })
             .toThrowError(/Argument 'x' passed to 'max' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('argmax', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: argmax', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
         var a = tf.tensor1d([1, 0, 3, 2]);
         var result = tf.argMax(a);
@@ -165,7 +174,7 @@ jasmine_util_1.describeWithFlags('argmax', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'argMax' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('argmin', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: argmin', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
         var a = tf.tensor1d([1, 0, 3, 2]);
         var result = tf.argMin(a);
@@ -218,7 +227,7 @@ jasmine_util_1.describeWithFlags('argmin', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'argMin' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('logSumExp', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: logSumExp', test_util_1.ALL_ENVS, function () {
     it('0', function () {
         var a = tf.scalar(0);
         var result = tf.logSumExp(a);
@@ -299,7 +308,7 @@ jasmine_util_1.describeWithFlags('logSumExp', test_util_1.ALL_ENVS, function () 
             .toThrowError(/Argument 'x' passed to 'logSumExp' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('sum', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: sum', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
         var a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
         var result = tf.sum(a);
@@ -398,7 +407,7 @@ jasmine_util_1.describeWithFlags('sum', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'sum' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('mean', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: mean', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
         var a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
         var r = tf.mean(a);
@@ -492,7 +501,7 @@ jasmine_util_1.describeWithFlags('mean', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'mean' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('moments', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: moments', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
         var a = tf.tensor2d([1, 2, 3, 0, 0, 1], [3, 2]);
         var _a = tf.moments(a), mean = _a.mean, variance = _a.variance;
@@ -590,7 +599,7 @@ jasmine_util_1.describeWithFlags('moments', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'moments' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('norm', test_util_1.ALL_ENVS, function () {
+jasmine_util_1.describeWithFlags('Reduction: norm', test_util_1.ALL_ENVS, function () {
     it('scalar norm', function () {
         var a = tf.scalar(-22.0);
         var norm = tf.norm(a);
@@ -787,58 +796,64 @@ jasmine_util_1.describeWithFlags('norm', test_util_1.ALL_ENVS, function () {
             .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
     });
 });
-jasmine_util_1.describeWithFlags('unsortedSegmentSum', test_util_1.ALL_ENVS, function () {
-    it('tensor1D', function () {
-        var t = tf.tensor1d([1, 2, 3, 4]);
-        var segmentIds = tf.tensor1d([0, 2, 0, 1], 'int32');
-        var numSegments = 3;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
-        expect(res.shape).toEqual([3]);
-        test_util_1.expectArraysClose(res, [4, 4, 2]);
+jasmine_util_1.describeWithFlags('Reduction: all', test_util_1.ALL_ENVS, function () {
+    it('Tensor1D', function () {
+        var a = tf.tensor1d([0, 0, 0], 'bool');
+        test_util_1.expectNumbersClose(tf.all(a).get(), 0);
+        a = tf.tensor1d([1, 0, 1], 'bool');
+        test_util_1.expectNumbersClose(tf.all(a).get(), 0);
+        a = tf.tensor1d([1, 1, 1], 'bool');
+        test_util_1.expectNumbersClose(tf.all(a).get(), 1);
     });
-    it('tensor2D axis=0', function () {
-        var t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-        var segmentIds = tf.tensor1d([0, 0], 'int32');
-        var numSegments = 2;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments);
-        expect(res.shape).toEqual([2, 2]);
-        test_util_1.expectArraysClose(res, [4, 6, 0, 0]);
+    it('ignores NaNs', function () {
+        var a = tf.tensor1d([1, NaN, 1], 'bool');
+        expect(tf.all(a).get()).toEqual(1);
     });
-    it('tensor2D axis=11', function () {
-        var t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
-        var segmentIds = tf.tensor1d([0, 0], 'int32');
-        var numSegments = 2;
-        var axis = 1;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-        expect(res.shape).toEqual([2, 2]);
-        test_util_1.expectArraysClose(res, [3, 0, 7, 0]);
+    it('2D', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+        test_util_1.expectNumbersClose(tf.all(a).get(), 0);
     });
-    it('tensor3D axis=0', function () {
-        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [3, 2, 2]);
-        var segmentIds = tf.tensor1d([2, 1, 2], 'int32');
-        var numSegments = 3;
-        var axis = 0;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-        expect(res.shape).toEqual([3, 2, 2]);
-        test_util_1.expectArraysClose(res, [0, 0, 0, 0, 5, 6, 7, 8, 10, 12, 14, 16]);
+    it('2D axis=[0,1]', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        test_util_1.expectNumbersClose(tf.all(a, [0, 1]).get(), 0);
     });
-    it('tensor3D axis=1', function () {
-        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-        var segmentIds = tf.tensor1d([2, 2, 2], 'int32');
-        var numSegments = 3;
-        var axis = 1;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-        expect(res.shape).toEqual([2, 3, 2]);
-        test_util_1.expectArraysClose(res, [0, 0, 0, 0, 9, 12, 0, 0, 0, 0, 27, 30]);
+    it('2D, axis=0', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+        var r = tf.all(a, 0);
+        expect(r.shape).toEqual([2]);
+        test_util_1.expectArraysClose(r, [0, 0]);
+        r = tf.all(a, 1);
+        expect(r.shape).toEqual([2]);
+        test_util_1.expectArraysClose(r, [1, 0]);
     });
-    it('tensor3D axis=2', function () {
-        var t = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [2, 3, 2]);
-        var segmentIds = tf.tensor1d([0, 0], 'int32');
-        var numSegments = 2;
-        var axis = 2;
-        var res = tf.unsortedSegmentSum(t, segmentIds, numSegments, axis);
-        expect(res.shape).toEqual([2, 3, 2]);
-        test_util_1.expectArraysClose(res, [3, 0, 7, 0, 11, 0, 15, 0, 19, 0, 23, 0]);
+    it('2D, axis=0, keepDims', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = a.all(0, true);
+        expect(r.shape).toEqual([1, 3]);
+        test_util_1.expectArraysClose(r, [0, 1, 0]);
+    });
+    it('2D, axis=1 provided as a number', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.all(a, 1);
+        test_util_1.expectArraysClose(r, [0, 0]);
+    });
+    it('2D, axis = -1 provided as a number', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.all(a, -1);
+        test_util_1.expectArraysClose(r, [0, 0]);
+    });
+    it('2D, axis=[1]', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.all(a, [1]);
+        test_util_1.expectArraysClose(r, [0, 0]);
+    });
+    it('throws when dtype is not boolean', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
+        expect(function () { return tf.all(a); }).toThrowError(/Error Array must be of type bool/);
+    });
+    it('throws when passed a non-tensor', function () {
+        expect(function () { return tf.all({}); })
+            .toThrowError(/Argument 'x' passed to 'all' must be a Tensor/);
     });
 });
 //# sourceMappingURL=reduction_ops_test.js.map

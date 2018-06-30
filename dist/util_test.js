@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("./index");
-var test_util_1 = require("./test_util");
 var jasmine_util_1 = require("./jasmine_util");
+var test_util_1 = require("./test_util");
 var util = require("./util");
 describe('Util', function () {
     it('Flatten arrays', function () {
@@ -226,22 +226,37 @@ describe('util.hasEncodingLoss', function () {
         expect(util.hasEncodingLoss('bool', 'bool')).toBe(false);
     });
 });
-jasmine_util_1.describeWithFlags('extractTensorsFromAny', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('getTensorsInContainer', test_util_1.CPU_ENVS, function () {
     it('null input returns empty tensor', function () {
-        var results = util.extractTensorsFromAny(null);
+        var results = util.getTensorsInContainer(null);
         expect(results).toEqual([]);
     });
     it('tensor input returns one element tensor', function () {
         var x = tf.scalar(1);
-        var results = util.extractTensorsFromAny(x);
+        var results = util.getTensorsInContainer(x);
         expect(results).toEqual([x]);
     });
     it('name tensor map returns flattened tensor', function () {
         var x1 = tf.scalar(1);
         var x2 = tf.scalar(3);
         var x3 = tf.scalar(4);
-        var results = util.extractTensorsFromAny({ x1: x1, x2: x2, x3: x3 });
+        var results = util.getTensorsInContainer({ x1: x1, x2: x2, x3: x3 });
         expect(results).toEqual([x1, x2, x3]);
+    });
+    it('can extract from arbitrary depth', function () {
+        var container = [
+            { x: tf.scalar(1), y: tf.scalar(2) },
+            [[[tf.scalar(3)]], { z: tf.scalar(4) }]
+        ];
+        var results = util.getTensorsInContainer(container);
+        expect(results.length).toBe(4);
+    });
+    it('works with loops in container', function () {
+        var container = [tf.scalar(1), tf.scalar(2), [tf.scalar(3)]];
+        var innerContainer = [container];
+        container.push(innerContainer);
+        var results = util.getTensorsInContainer(container);
+        expect(results.length).toBe(3);
     });
 });
 //# sourceMappingURL=util_test.js.map

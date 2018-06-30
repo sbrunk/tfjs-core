@@ -160,6 +160,25 @@ var ReductionOps = (function () {
         }
         return environment_1.ENV.engine.runKernel(function (backend) { return backend.argMax(x, axes[0]); }, { x: x });
     };
+    ReductionOps.all = function (x, axis, keepDims) {
+        if (axis === void 0) { axis = null; }
+        if (keepDims === void 0) { keepDims = false; }
+        util.assertArgumentsAreTensors({ x: x }, 'all');
+        util.assert(x.dtype === 'bool', 'Error Array must be of type bool.');
+        var origAxes = axis_util.parseAxisParam(axis, x.shape);
+        var axes = origAxes;
+        var permutedAxes = axis_util.getAxesPermutation(axes, x.rank);
+        if (permutedAxes != null) {
+            x = x.transpose(permutedAxes);
+            axes = axis_util.getInnerMostAxes(axes.length, x.rank);
+        }
+        var res = environment_1.ENV.engine.runKernel(function (backend) { return backend.all(x, axes); }, { x: x });
+        if (keepDims) {
+            var newShape = axis_util.expandShapeToKeepDim(res.shape, origAxes);
+            return res.reshape(newShape);
+        }
+        return res;
+    };
     ReductionOps.moments = function (x, axis, keepDims) {
         if (axis === void 0) { axis = null; }
         if (keepDims === void 0) { keepDims = false; }
@@ -173,31 +192,6 @@ var ReductionOps = (function () {
         var devSquared = x.toFloat().sub(mean.reshape(keepDimsShape)).square();
         var variance = devSquared.mean(axes, keepDims);
         return { mean: mean, variance: variance };
-    };
-    ReductionOps.unsortedSegmentSum = function (x, segmentIds, numSegments, axis) {
-        if (axis === void 0) { axis = 0; }
-        util.assertArgumentsAreTensors({ x: x, segmentIds: segmentIds }, 'unsortedSegmentSum');
-        util.assert(segmentIds.dtype === 'int32', 'Segment Ids must be of dtype `int32`');
-        axis = axis_util.parseAxisParam(axis, x.shape)[0];
-        var res = [];
-        var dim = segmentIds.shape[0];
-        var newShape = [];
-        for (var i = 0; i < x.shape.length; i++) {
-            if (i === axis) {
-                newShape.push(dim);
-            }
-            else {
-                newShape.push(1);
-            }
-        }
-        var reshapedSegmentIds = ops.reshape(segmentIds, newShape);
-        for (var i = 0; i < numSegments; i++) {
-            var segmentId = ops.scalar(i, 'int32');
-            var mask = ops.equal(segmentId, reshapedSegmentIds).asType('float32');
-            var sum = mask.mul(x).sum(axis);
-            res.push(sum);
-        }
-        return ops.stack(res, axis);
     };
     __decorate([
         doc_1.doc({ heading: 'Operations', subheading: 'Reduction' }),
@@ -228,13 +222,13 @@ var ReductionOps = (function () {
         operation_1.operation
     ], ReductionOps, "argMax", null);
     __decorate([
+        doc_1.doc({ heading: 'Operations', subheading: 'Reduction' }),
+        operation_1.operation
+    ], ReductionOps, "all", null);
+    __decorate([
         doc_1.doc({ heading: 'Operations', subheading: 'Normalization' }),
         operation_1.operation
     ], ReductionOps, "moments", null);
-    __decorate([
-        doc_1.doc({ heading: 'Operations', subheading: 'Reduction' }),
-        operation_1.operation
-    ], ReductionOps, "unsortedSegmentSum", null);
     return ReductionOps;
 }());
 exports.ReductionOps = ReductionOps;

@@ -4,39 +4,39 @@ var tf = require("../index");
 var jasmine_util_1 = require("../jasmine_util");
 var test_util_1 = require("../test_util");
 var browser_http_1 = require("./browser_http");
-jasmine_util_1.describeWithFlags('browserHTTPRequest', test_util_1.CPU_ENVS, function () {
-    var modelTopology1 = {
-        'class_name': 'Sequential',
-        'keras_version': '2.1.4',
-        'config': [{
-                'class_name': 'Dense',
-                'config': {
-                    'kernel_initializer': {
-                        'class_name': 'VarianceScaling',
-                        'config': {
-                            'distribution': 'uniform',
-                            'scale': 1.0,
-                            'seed': null,
-                            'mode': 'fan_avg'
-                        }
-                    },
-                    'name': 'dense',
-                    'kernel_constraint': null,
-                    'bias_regularizer': null,
-                    'bias_constraint': null,
-                    'dtype': 'float32',
-                    'activation': 'linear',
-                    'trainable': true,
-                    'kernel_regularizer': null,
-                    'bias_initializer': { 'class_name': 'Zeros', 'config': {} },
-                    'units': 1,
-                    'batch_input_shape': [null, 3],
-                    'use_bias': true,
-                    'activity_regularizer': null
-                }
-            }],
-        'backend': 'tensorflow'
-    };
+var modelTopology1 = {
+    'class_name': 'Sequential',
+    'keras_version': '2.1.4',
+    'config': [{
+            'class_name': 'Dense',
+            'config': {
+                'kernel_initializer': {
+                    'class_name': 'VarianceScaling',
+                    'config': {
+                        'distribution': 'uniform',
+                        'scale': 1.0,
+                        'seed': null,
+                        'mode': 'fan_avg'
+                    }
+                },
+                'name': 'dense',
+                'kernel_constraint': null,
+                'bias_regularizer': null,
+                'bias_constraint': null,
+                'dtype': 'float32',
+                'activation': 'linear',
+                'trainable': true,
+                'kernel_regularizer': null,
+                'bias_initializer': { 'class_name': 'Zeros', 'config': {} },
+                'units': 1,
+                'batch_input_shape': [null, 3],
+                'use_bias': true,
+                'activity_regularizer': null
+            }
+        }],
+    'backend': 'tensorflow'
+};
+jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_CPU_ENVS, function () {
     var weightSpecs1 = [
         {
             name: 'dense/kernel',
@@ -215,13 +215,8 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest', test_util_1.CPU_ENVS, fun
         });
     });
     it('Existing body leads to Error', function () {
-        var key1Data = '1337';
-        var key2Data = '42';
-        var extraFormData = new FormData();
-        extraFormData.set('key1', key1Data);
-        extraFormData.set('key2', key2Data);
         expect(function () { return tf.io.browserHTTPRequest('model-upload-test', {
-            body: extraFormData
+            body: 'existing body'
         }); }).toThrowError(/requestInit is expected to have no pre-existing body/);
     });
     it('Empty, null or undefined URL paths lead to Error', function () {
@@ -240,6 +235,270 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest', test_util_1.CPU_ENVS, fun
             .toEqual(true);
         expect(browser_http_1.httpRequestRouter('localhost://foo')).toBeNull();
         expect(browser_http_1.httpRequestRouter('foo:5000/bar')).toBeNull();
+    });
+});
+jasmine_util_1.describeWithFlags('browserHTTPRequest-load', test_util_1.CPU_ENVS, function () {
+    var requestInits;
+    var setupFakeWeightFiles = function (fileBufferMap) {
+        spyOn(window, 'fetch').and.callFake(function (path, init) {
+            requestInits.push(init);
+            return new Response(fileBufferMap[path]);
+        });
+    };
+    beforeEach(function () {
+        requestInits = [];
+    });
+    it('1 group, 2 weights, 1 path', function (done) {
+        var weightManifest1 = [{
+                paths: ['weightfile0'],
+                weights: [
+                    {
+                        name: 'dense/kernel',
+                        shape: [3, 1],
+                        dtype: 'float32',
+                    },
+                    {
+                        name: 'dense/bias',
+                        shape: [2],
+                        dtype: 'float32',
+                    }
+                ]
+            }];
+        var floatData = new Float32Array([1, 3, 3, 7, 4]);
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightManifest1 }),
+            './weightfile0': floatData,
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(floatData);
+            expect(requestInits).toEqual([{}, {}]);
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('1 group, 2 weights, 1 path, with requestInit', function (done) {
+        var weightManifest1 = [{
+                paths: ['weightfile0'],
+                weights: [
+                    {
+                        name: 'dense/kernel',
+                        shape: [3, 1],
+                        dtype: 'float32',
+                    },
+                    {
+                        name: 'dense/bias',
+                        shape: [2],
+                        dtype: 'float32',
+                    }
+                ]
+            }];
+        var floatData = new Float32Array([1, 3, 3, 7, 4]);
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightManifest1 }),
+            './weightfile0': floatData,
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json', { headers: { 'header_key_1': 'header_value_1' } });
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(floatData);
+            expect(requestInits).toEqual([
+                { headers: { 'header_key_1': 'header_value_1' } },
+                { headers: { 'header_key_1': 'header_value_1' } }
+            ]);
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('1 group, 2 weight, 2 paths', function (done) {
+        var weightManifest1 = [{
+                paths: ['weightfile0', 'weightfile1'],
+                weights: [
+                    {
+                        name: 'dense/kernel',
+                        shape: [3, 1],
+                        dtype: 'float32',
+                    },
+                    {
+                        name: 'dense/bias',
+                        shape: [2],
+                        dtype: 'float32',
+                    }
+                ]
+            }];
+        var floatData1 = new Float32Array([1, 3, 3]);
+        var floatData2 = new Float32Array([7, 4]);
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightManifest1 }),
+            './weightfile0': floatData1,
+            './weightfile1': floatData2,
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(new Float32Array([1, 3, 3, 7, 4]));
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('2 groups, 2 weight, 2 paths', function (done) {
+        var weightsManifest = [
+            {
+                paths: ['weightfile0'],
+                weights: [{
+                        name: 'dense/kernel',
+                        shape: [3, 1],
+                        dtype: 'float32',
+                    }]
+            },
+            {
+                paths: ['weightfile1'],
+                weights: [{
+                        name: 'dense/bias',
+                        shape: [2],
+                        dtype: 'float32',
+                    }],
+            }
+        ];
+        var floatData1 = new Float32Array([1, 3, 3]);
+        var floatData2 = new Float32Array([7, 4]);
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightsManifest }),
+            './weightfile0': floatData1,
+            './weightfile1': floatData2,
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightsManifest[0].weights.concat(weightsManifest[1].weights));
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(new Float32Array([1, 3, 3, 7, 4]));
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('2 groups, 2 weight, 2 paths, Int32 and Uint8 Data', function (done) {
+        var weightsManifest = [
+            {
+                paths: ['weightfile0'],
+                weights: [{
+                        name: 'fooWeight',
+                        shape: [3, 1],
+                        dtype: 'int32',
+                    }]
+            },
+            {
+                paths: ['weightfile1'],
+                weights: [{
+                        name: 'barWeight',
+                        shape: [2],
+                        dtype: 'bool',
+                    }],
+            }
+        ];
+        var floatData1 = new Int32Array([1, 3, 3]);
+        var floatData2 = new Uint8Array([7, 4]);
+        setupFakeWeightFiles({
+            'path1/model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightsManifest }),
+            'path1/weightfile0': floatData1,
+            'path1/weightfile1': floatData2,
+        });
+        var handler = tf.io.browserHTTPRequest('path1/model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightsManifest[0].weights.concat(weightsManifest[1].weights));
+            expect(new Int32Array(modelArtifacts.weightData.slice(0, 12)))
+                .toEqual(new Int32Array([1, 3, 3]));
+            expect(new Uint8Array(modelArtifacts.weightData.slice(12, 14)))
+                .toEqual(new Uint8Array([7, 4]));
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('topology only', function (done) {
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1 }),
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs).toBeUndefined();
+            expect(modelArtifacts.weightData).toBeUndefined();
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('weights only', function (done) {
+        var weightsManifest = [
+            {
+                paths: ['weightfile0'],
+                weights: [{
+                        name: 'fooWeight',
+                        shape: [3, 1],
+                        dtype: 'int32',
+                    }]
+            },
+            {
+                paths: ['weightfile1'],
+                weights: [{
+                        name: 'barWeight',
+                        shape: [2],
+                        dtype: 'float32',
+                    }],
+            }
+        ];
+        var floatData1 = new Int32Array([1, 3, 3]);
+        var floatData2 = new Float32Array([-7, -4]);
+        setupFakeWeightFiles({
+            'path1/model.json': JSON.stringify({ weightsManifest: weightsManifest }),
+            'path1/weightfile0': floatData1,
+            'path1/weightfile1': floatData2,
+        });
+        var handler = tf.io.browserHTTPRequest('path1/model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toBeUndefined();
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightsManifest[0].weights.concat(weightsManifest[1].weights));
+            expect(new Int32Array(modelArtifacts.weightData.slice(0, 12)))
+                .toEqual(new Int32Array([1, 3, 3]));
+            expect(new Float32Array(modelArtifacts.weightData.slice(12, 20)))
+                .toEqual(new Float32Array([-7, -4]));
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('Missing modelTopology and weightsManifest leads to error', function (done) {
+        setupFakeWeightFiles({ 'path1/model.json': JSON.stringify({}) });
+        var handler = tf.io.browserHTTPRequest('path1/model.json');
+        handler.load()
+            .then(function (modelTopology1) {
+            done.fail('Loading from missing modelTopology and weightsManifest ' +
+                'succeeded expectedly.');
+        })
+            .catch(function (err) {
+            expect(err.message)
+                .toMatch(/contains neither model topology or manifest/);
+            done();
+        });
     });
 });
 //# sourceMappingURL=browser_http_test.js.map

@@ -185,7 +185,7 @@ function repeatedTry(checkFn, delayFn, maxCounter) {
             }
             setTimeout(tryFn, nextBackoff);
         };
-        setTimeout(tryFn, 0);
+        tryFn();
     });
 }
 exports.repeatedTry = repeatedTry;
@@ -380,29 +380,42 @@ function isFunction(f) {
     return !!(f && f.constructor && f.call && f.apply);
 }
 exports.isFunction = isFunction;
-function extractTensorsFromContainer(result) {
-    return extractTensorsFromAny(result);
-}
-exports.extractTensorsFromContainer = extractTensorsFromContainer;
-function extractTensorsFromAny(result) {
-    if (result == null) {
-        return [];
-    }
-    if (result instanceof tensor_1.Tensor) {
-        return [result];
-    }
+function getTensorsInContainer(result) {
     var list = [];
-    var resultObj = result;
-    if (!isIterable(resultObj)) {
-        return [];
-    }
-    for (var k in resultObj) {
-        var sublist = flatten(resultObj[k]).filter(function (x) { return x instanceof tensor_1.Tensor; });
-        list.push.apply(list, sublist);
-    }
+    var seen = new Set();
+    walkTensorContainer(result, list, seen);
     return list;
 }
-exports.extractTensorsFromAny = extractTensorsFromAny;
+exports.getTensorsInContainer = getTensorsInContainer;
+function walkTensorContainer(container, list, seen) {
+    if (container == null) {
+        return;
+    }
+    if (container instanceof tensor_1.Tensor) {
+        list.push(container);
+        return;
+    }
+    if (!isIterable(container)) {
+        return;
+    }
+    var iterable = container;
+    for (var k in iterable) {
+        var val = iterable[k];
+        if (!seen.has(val)) {
+            seen.add(val);
+            walkTensorContainer(val, list, seen);
+        }
+    }
+}
+function nearestDivisor(size, start) {
+    for (var i = start; i < size; ++i) {
+        if (size % i === 0) {
+            return i;
+        }
+    }
+    return size;
+}
+exports.nearestDivisor = nearestDivisor;
 function isIterable(obj) {
     return Array.isArray(obj) || typeof obj === 'object';
 }

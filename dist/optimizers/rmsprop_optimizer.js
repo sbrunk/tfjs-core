@@ -15,12 +15,13 @@ var globals_1 = require("../globals");
 var ops_1 = require("../ops/ops");
 var serialization_1 = require("../serialization");
 var optimizer_1 = require("./optimizer");
+var optimizer_utils = require("./optimizer_utils");
 var RMSPropOptimizer = (function (_super) {
     __extends(RMSPropOptimizer, _super);
     function RMSPropOptimizer(learningRate, decay, momentum, epsilon, centered) {
         if (decay === void 0) { decay = 0.9; }
         if (momentum === void 0) { momentum = 0.0; }
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         if (centered === void 0) { centered = false; }
         var _this = _super.call(this) || this;
         _this.learningRate = learningRate;
@@ -31,11 +32,14 @@ var RMSPropOptimizer = (function (_super) {
         _this.accumulatedMeanGrads = {};
         _this.accumulatedMoments = {};
         _this.c = globals_1.keep(ops_1.scalar(learningRate));
-        _this.epsilonScalar = globals_1.keep(ops_1.scalar(epsilon));
         _this.decayScalar = globals_1.keep(ops_1.scalar(decay));
         _this.momentumScalar = globals_1.keep(ops_1.scalar(momentum));
         _this.oneMinusDecay = globals_1.keep(ops_1.scalar(1 - decay));
         _this.centered = centered;
+        if (epsilon === null) {
+            epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+        }
+        _this.epsilonScalar = globals_1.keep(ops_1.scalar(epsilon));
         return _this;
     }
     RMSPropOptimizer.prototype.applyGradients = function (variableGradients) {

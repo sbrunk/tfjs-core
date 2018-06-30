@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var test_util_1 = require("../test_util");
+var environment_1 = require("../environment");
 var tensor_1 = require("../tensor");
+var test_util_1 = require("../test_util");
 function jarqueBeraNormalityTest(a) {
     var values;
     if (a instanceof tensor_1.Tensor) {
@@ -21,7 +22,9 @@ function jarqueBeraNormalityTest(a) {
 }
 exports.jarqueBeraNormalityTest = jarqueBeraNormalityTest;
 function expectArrayInMeanStdRange(actual, expectedMean, expectedStdDev, epsilon) {
-    if (epsilon === void 0) { epsilon = test_util_1.TEST_EPSILON; }
+    if (epsilon == null) {
+        epsilon = environment_1.ENV.get('TEST_EPSILON');
+    }
     var actualValues;
     if (actual instanceof tensor_1.Tensor) {
         actualValues = actual.dataSync();

@@ -5,7 +5,7 @@ var jasmine_util_1 = require("../jasmine_util");
 var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, function () {
     it('simple batchnorm4D, no offset or scale, 2x1x1x2', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var varianceEpsilon = .001;
@@ -22,7 +22,7 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm4D, no offset, 2x1x1x2', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var scale = tf.tensor1d([4, 5]);
@@ -40,7 +40,7 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm4D, no scale, 2x1x1x2', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([4, 5]);
@@ -62,7 +62,7 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm4D, 2x1x1x2', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -85,7 +85,7 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm4D gradients, 2x1x1x2', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -97,11 +97,11 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
         var gradMean = tf.grad(function (mean) { return tf.batchNormalization4d(x, mean, variance, varianceEpsilon, scale, offset); })(mean, dy);
         test_util_1.expectArraysClose(gradMean, tf.tensor1d([2.828, 5.773]));
         var gradVariance = tf.grad(function (variance) { return tf.batchNormalization4d(x, mean, variance, varianceEpsilon, scale, offset); })(variance, dy);
-        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([1.413, 238.519]));
+        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([3.180, 11.060]));
         var gradOffset = tf.grad(function (offset) { return tf.batchNormalization4d(x, mean, variance, varianceEpsilon, scale, offset); })(offset, dy);
         test_util_1.expectArraysClose(gradOffset, dy.sum([0, 1, 2]));
         var gradScale = tf.grad(function (scale) { return tf.batchNormalization4d(x, mean, variance, varianceEpsilon, scale, offset); })(scale, dy);
-        test_util_1.expectArraysClose(gradScale, tf.tensor1d([-2.828, -286.318]));
+        test_util_1.expectArraysClose(gradScale, tf.tensor1d([-6.362, -13.277]));
     });
     it('batchnorm4D gradients, same shapes in x, mean and variance', function () {
         var x = tf.tensor4d([10, 20, 30, 40], [2, 1, 1, 2]);
@@ -125,7 +125,7 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
 });
 jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, function () {
     it('simple batchnorm3D, no offset or scale, 2x1x2', function () {
-        var x = tf.tensor3d([2, 100, 4, 400], [2, 1, 2]);
+        var x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var varianceEpsilon = .001;
@@ -142,7 +142,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm3D, no offset, 2x1x2', function () {
-        var x = tf.tensor3d([2, 100, 4, 400], [2, 1, 2]);
+        var x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var scale = tf.tensor1d([4, 5]);
@@ -160,7 +160,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm3D, no scale, 2x1x2', function () {
-        var x = tf.tensor3d([2, 100, 4, 400], [2, 1, 2]);
+        var x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([4, 5]);
@@ -182,7 +182,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm3D, 2x1x2', function () {
-        var x = tf.tensor3d([2, 100, 4, 400], [2, 1, 2]);
+        var x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -206,7 +206,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
     });
     it('batchnorm3D, x,mean,var,offset,scale are all 3D', function () {
         var shape = [2, 1, 2];
-        var x = tf.tensor3d([2, 100, 4, 400], shape);
+        var x = tf.tensor3d([2, 4, 9, 23], shape);
         var mean = tf.tensor3d([1, 2, 3, 4], shape);
         var variance = tf.tensor3d([2, 3, 4, 5], shape);
         var offset = tf.tensor3d([3, 4, 5, 6], shape);
@@ -229,7 +229,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm3D gradients, 2x1x2', function () {
-        var x = tf.tensor3d([2, 100, 4, 400], [2, 1, 2]);
+        var x = tf.tensor3d([2, 4, 9, 23], [2, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -241,11 +241,11 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
         var gradMean = tf.grad(function (mean) { return tf.batchNormalization3d(x, mean, variance, varianceEpsilon, scale, offset); })(mean, dy);
         test_util_1.expectArraysClose(gradMean, tf.tensor1d([-2.828, -5.773]));
         var gradVariance = tf.grad(function (variance) { return tf.batchNormalization3d(x, mean, variance, varianceEpsilon, scale, offset); })(variance, dy);
-        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([-1.413, -238.519]));
+        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([-3.180, -11.060]));
         var gradOffset = tf.grad(function (offset) { return tf.batchNormalization3d(x, mean, variance, varianceEpsilon, scale, offset); })(offset, dy);
         test_util_1.expectArraysClose(gradOffset, tf.onesLike(offset).mul(tf.scalar(2)));
         var gradScale = tf.grad(function (scale) { return tf.batchNormalization3d(x, mean, variance, varianceEpsilon, scale, offset); })(scale, dy);
-        test_util_1.expectArraysClose(gradScale, tf.tensor1d([2.828, 286.318]));
+        test_util_1.expectArraysClose(gradScale, tf.tensor1d([6.362, 13.277]));
     });
     it('batchnorm3D gradients, same shapes in x, mean and variance', function () {
         var x = tf.tensor3d([10, 20, 30, 40], [2, 1, 2]);
@@ -288,7 +288,7 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
 });
 jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, function () {
     it('simple batchnorm2D, no offset or scale, 2x2', function () {
-        var x = tf.tensor2d([2, 100, 4, 400], [2, 2]);
+        var x = tf.tensor2d([2, 4, 9, 23], [2, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var varianceEpsilon = .001;
@@ -305,7 +305,7 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm2D, no offset, 2x2', function () {
-        var x = tf.tensor2d([2, 100, 4, 400], [2, 2]);
+        var x = tf.tensor2d([2, 4, 9, 23], [2, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var scale = tf.tensor1d([4, 5]);
@@ -323,7 +323,7 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm2D, no scale, 2x2', function () {
-        var x = tf.tensor2d([2, 100, 4, 400], [2, 2]);
+        var x = tf.tensor2d([2, 4, 9, 23], [2, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([4, 5]);
@@ -345,7 +345,7 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm2D, 2x2', function () {
-        var x = tf.tensor2d([2, 100, 4, 400], [2, 2]);
+        var x = tf.tensor2d([2, 4, 9, 23], [2, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -368,7 +368,7 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         ]);
     });
     it('simple batchnorm2D gradients, 2x2', function () {
-        var x = tf.tensor2d([2, 100, 4, 400], [2, 2]);
+        var x = tf.tensor2d([2, 4, 9, 23], [2, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var offset = tf.tensor1d([3, 4]);
@@ -380,11 +380,11 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         var gradMean = tf.grad(function (mean) { return tf.batchNormalization2d(x, mean, variance, varianceEpsilon, scale, offset); })(mean, dy);
         test_util_1.expectArraysClose(gradMean, tf.tensor1d([-2.828, -5.773]));
         var gradVariance = tf.grad(function (variance) { return tf.batchNormalization2d(x, mean, variance, varianceEpsilon, scale, offset); })(variance, dy);
-        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([-1.413, -238.519]));
+        test_util_1.expectArraysClose(gradVariance, tf.tensor1d([-3.180, -11.060]));
         var gradOffset = tf.grad(function (offset) { return tf.batchNormalization2d(x, mean, variance, varianceEpsilon, scale, offset); })(offset, dy);
         test_util_1.expectArraysClose(gradOffset, tf.onesLike(offset).mul(tf.scalar(2)));
         var gradScale = tf.grad(function (scale) { return tf.batchNormalization2d(x, mean, variance, varianceEpsilon, scale, offset); })(scale, dy);
-        test_util_1.expectArraysClose(gradScale, tf.tensor1d([2.828, 286.318]));
+        test_util_1.expectArraysClose(gradScale, tf.tensor1d([6.362, 13.277]));
     });
     it('batchnorm2D gradients, same shapes in x, mean and variance', function () {
         var x = tf.tensor2d([10, 20, 30, 40], [2, 2]);
@@ -428,20 +428,20 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
             .toThrowError(/Argument 'x' passed to 'batchNormalization' must be a Tensor/);
     });
     it('throws when passed mean as a non-tensor', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var variance = tf.tensor1d([2, 3]);
         expect(function () { return tf.batchNormalization(x, {}, variance); })
             .toThrowError(/Argument 'mean' passed to 'batchNormalization' must be a Tensor/);
     });
     it('throws when passed variance as a non-tensor', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var e = /Argument 'variance' passed to 'batchNormalization' must be a Tensor/;
         expect(function () { return tf.batchNormalization(x, mean, {}); })
             .toThrowError(e);
     });
     it('throws when passed scale as a non-tensor', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var epsilon = .001;
@@ -451,7 +451,7 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
             .toThrowError(/Argument 'scale' passed to 'batchNormalization' must be a Tensor/);
     });
     it('throws when passed offset as a non-tensor', function () {
-        var x = tf.tensor4d([2, 100, 4, 400], [2, 1, 1, 2]);
+        var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
         var variance = tf.tensor1d([2, 3]);
         var epsilon = .001;

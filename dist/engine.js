@@ -54,7 +54,8 @@ var Engine = (function () {
         this.numDataBuffers = 0;
         this.gradientScopeCount = 0;
         this.customGradientDepth = 0;
-        this.activeScope = { keep: [], track: [] };
+        this.keepTensors = new Set();
+        this.activeScope = { track: [] };
         this.scopeStack = [this.activeScope];
         this.profiler = new profiler_1.Profiler(backend);
     }
@@ -113,6 +114,9 @@ var Engine = (function () {
         if (!this.refCounter.has(a.dataId)) {
             return;
         }
+        if (this.keepTensors.has(a.id)) {
+            this.keepTensors.delete(a.id);
+        }
         this.numTensors--;
         var refCount = this.refCounter.get(a.dataId);
         if (refCount <= 1) {
@@ -170,7 +174,7 @@ var Engine = (function () {
             throw new Error('Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
                 'tf.tidy(() => {...}) to avoid memory leaks.');
         }
-        this.activeScope.keep.push(result);
+        this.keepTensors.add(result.id);
         return result;
     };
     Engine.prototype.startScope = function (name, gradientsMode) {
@@ -181,7 +185,7 @@ var Engine = (function () {
         if (gradientsMode) {
             this.gradientScopeCount++;
         }
-        var scopeInfo = { keep: [], track: [] };
+        var scopeInfo = { track: [] };
         if (name) {
             scopeInfo.name = name;
         }
@@ -197,12 +201,12 @@ var Engine = (function () {
                 this.activeTape = null;
             }
         }
-        var tensorsToKeep = this.activeScope.keep;
-        var tensorsToTrackInParent = util.extractTensorsFromContainer(result);
-        tensorsToKeep = tensorsToKeep.concat(tensorsToTrackInParent);
+        var tensorsToKeep = new Set(this.keepTensors);
+        var tensorsToTrackInParent = util.getTensorsInContainer(result);
+        tensorsToTrackInParent.forEach(function (tensor) { return tensorsToKeep.add(tensor.id); });
         for (var i = 0; i < this.activeScope.track.length; i++) {
             var tensor = this.activeScope.track[i];
-            if (util.isTensorInList(tensor, tensorsToKeep)) {
+            if (tensorsToKeep.has(tensor.id)) {
                 continue;
             }
             if (this.activeTape != null) {
@@ -212,17 +216,17 @@ var Engine = (function () {
                 tensor.dispose();
             }
         }
-        this.scopeStack.pop();
+        var oldScope = this.scopeStack.pop();
         this.activeScope = this.scopeStack.length === 0 ?
-            { keep: [], track: [] } :
+            { track: [] } :
             this.scopeStack[this.scopeStack.length - 1];
         tensorsToTrackInParent.forEach(function (tensor) {
-            if (!util.isTensorInList(tensor, _this.activeScope.keep)) {
+            if (!_this.keepTensors.has(tensor.id) &&
+                util.isTensorInList(tensor, oldScope.track)) {
                 _this.track(tensor);
             }
         });
     };
-    Engine.prototype.dispose = function () { };
     Engine.prototype.gradients = function (f, xs, dy, allowNoGradients) {
         var _this = this;
         if (allowNoGradients === void 0) { allowNoGradients = false; }

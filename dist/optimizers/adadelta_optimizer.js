@@ -15,10 +15,11 @@ var globals_1 = require("../globals");
 var ops_1 = require("../ops/ops");
 var serialization_1 = require("../serialization");
 var optimizer_1 = require("./optimizer");
+var optimizer_utils = require("./optimizer_utils");
 var AdadeltaOptimizer = (function (_super) {
     __extends(AdadeltaOptimizer, _super);
     function AdadeltaOptimizer(learningRate, rho, epsilon) {
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         var _this = _super.call(this) || this;
         _this.learningRate = learningRate;
         _this.rho = rho;
@@ -26,9 +27,12 @@ var AdadeltaOptimizer = (function (_super) {
         _this.accumulatedGrads = {};
         _this.accumulatedUpdates = {};
         _this.c = globals_1.keep(ops_1.scalar(-learningRate));
-        _this.epsilonScalar = globals_1.keep(ops_1.scalar(epsilon));
         _this.rhoScalar = globals_1.keep(ops_1.scalar(rho));
         _this.oneMinusRho = globals_1.keep(ops_1.scalar(1 - rho));
+        if (epsilon === null) {
+            epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+        }
+        _this.epsilonScalar = globals_1.keep(ops_1.scalar(epsilon));
         return _this;
     }
     AdadeltaOptimizer.prototype.applyGradients = function (variableGradients) {

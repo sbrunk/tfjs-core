@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 var sqArr = function (arr) { return arr.map(function (d) { return d * d; }); };
 var sumArr = function (arr) { return arr.reduce(function (prev, curr) { return prev + curr; }, 0); };
 var flatten = function (arr) {

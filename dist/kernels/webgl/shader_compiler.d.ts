@@ -1,6 +1,7 @@
 export declare type ShapeInfo = {
     logicalShape: number[];
     texShape: [number, number];
+    isUniform: boolean;
 };
 export declare type InputInfo = {
     name: string;

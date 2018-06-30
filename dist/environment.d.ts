@@ -8,12 +8,16 @@ export declare enum Type {
 export interface Features {
     'DEBUG'?: boolean;
     'IS_BROWSER'?: boolean;
+    'IS_NODE'?: boolean;
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION'?: number;
     'WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'?: boolean;
     'WEBGL_VERSION'?: number;
-    'WEBGL_FLOAT_TEXTURE_ENABLED'?: boolean;
+    'WEBGL_RENDER_FLOAT32_ENABLED'?: boolean;
+    'WEBGL_DOWNLOAD_FLOAT_ENABLED'?: boolean;
     'WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'?: boolean;
     'BACKEND'?: string;
+    'TEST_EPSILON'?: number;
+    'IS_CHROME'?: boolean;
 }
 export declare const URL_PROPERTIES: URLProperty[];
 export interface URLProperty {
@@ -31,6 +35,7 @@ export declare class Environment {
     static disposeVariables(): void;
     static memory(): MemoryInfo;
     get<K extends keyof Features>(feature: K): Features[K];
+    getFeatures(): Features;
     set<K extends keyof Features>(feature: K, value: Features[K]): void;
     getBestBackendType(): string;
     private evaluateFeature<K>(feature);

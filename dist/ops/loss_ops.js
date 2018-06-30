@@ -106,6 +106,21 @@ var LossOps = (function () {
             .sub(one.sub(labels).mul(one.sub(predictions).add(epsilonScalar).log()));
         return LossOps.computeWeightedLoss(losses, weights, reduction);
     };
+    LossOps.huberLoss = function (labels, predictions, weights, delta, reduction) {
+        if (delta === void 0) { delta = 1.0; }
+        if (reduction === void 0) { reduction = Reduction.SUM_BY_NONZERO_WEIGHTS; }
+        util.assertArgumentsAreTensors({ labels: labels, predictions: predictions }, 'huberLoss');
+        if (weights != null) {
+            util.assertArgumentsAreTensors({ weights: weights }, 'huberLoss');
+        }
+        util.assertShapesMatch(labels.shape, predictions.shape, 'Error in huberLoss: ');
+        var deltaScalar = ops.scalar(delta);
+        var error = predictions.sub(labels).abs();
+        var quadratic = ops.minimum(error, deltaScalar);
+        var linear = error.sub(quadratic);
+        var losses = ops.scalar(0.5).mul(quadratic.square()).add(deltaScalar.mul(linear));
+        return LossOps.computeWeightedLoss(losses, weights, reduction);
+    };
     __decorate([
         doc_1.doc({ heading: 'Training', subheading: 'Losses', namespace: 'losses' }),
         operation_1.operation
@@ -130,6 +145,10 @@ var LossOps = (function () {
         doc_1.doc({ heading: 'Training', subheading: 'Losses', namespace: 'losses' }),
         operation_1.operation
     ], LossOps, "logLoss", null);
+    __decorate([
+        doc_1.doc({ heading: 'Training', subheading: 'Losses', namespace: 'losses' }),
+        operation_1.operation
+    ], LossOps, "huberLoss", null);
     return LossOps;
 }());
 exports.LossOps = LossOps;

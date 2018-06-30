@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('softmax', test_util_1.ALL_ENVS, function () {
     it('regular test', function () {
         var y = tf.softmax(tf.tensor1d([2, 1, 3]));
@@ -10,11 +10,11 @@ jasmine_util_1.describeWithFlags('softmax', test_util_1.ALL_ENVS, function () {
         test_util_1.expectNumbersClose(y.get(0) + y.get(1) + y.get(2), 1);
     });
     it('overflow', function () {
-        var y = tf.softmax(tf.tensor1d([1000, 1000]));
+        var y = tf.softmax(tf.tensor1d([100, 100]));
         test_util_1.expectArraysClose(y, [0.5, 0.5]);
     });
     it('underflow', function () {
-        var y = tf.softmax(tf.tensor1d([-1000, -1000]));
+        var y = tf.softmax(tf.tensor1d([-100, -100]));
         test_util_1.expectArraysClose(y, [0.5, 0.5]);
     });
     it('Huge difference between probabilities', function () {

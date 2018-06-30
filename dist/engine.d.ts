@@ -38,6 +38,7 @@ export declare class Engine implements TensorManager {
     private customGradientDepth;
     private activeScope;
     private scopeStack;
+    private keepTensors;
     private profiler;
     constructor(backend: KernelBackend, safeMode: boolean);
     runKernel<T extends Tensor, I extends NamedTensorMap>(forwardFunc: ForwardFunc<T>, inputs: I, backwardsFunc?: (dy: T, saved: Tensor[]) => {
@@ -53,7 +54,6 @@ export declare class Engine implements TensorManager {
     keep<T extends Tensor>(result: T): T;
     startScope(name?: string, gradientsMode?: boolean): void;
     endScope(result: TensorContainer, gradientsMode?: boolean): void;
-    dispose(): void;
     gradients<T extends Tensor>(f: () => T, xs: Tensor[], dy?: T, allowNoGradients?: boolean): {
         value: T;
         grads: Tensor[];

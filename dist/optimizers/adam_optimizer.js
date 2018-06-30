@@ -15,10 +15,11 @@ var globals_1 = require("../globals");
 var ops_1 = require("../ops/ops");
 var serialization_1 = require("../serialization");
 var optimizer_1 = require("./optimizer");
+var optimizer_utils = require("./optimizer_utils");
 var AdamOptimizer = (function (_super) {
     __extends(AdamOptimizer, _super);
     function AdamOptimizer(learningRate, beta1, beta2, epsilon) {
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         var _this = _super.call(this) || this;
         _this.learningRate = learningRate;
         _this.beta1 = beta1;
@@ -27,7 +28,6 @@ var AdamOptimizer = (function (_super) {
         _this.accumulatedFirstMoment = {};
         _this.accumulatedSecondMoment = {};
         _this.c = globals_1.keep(ops_1.scalar(-learningRate));
-        _this.epsScalar = globals_1.keep(ops_1.scalar(epsilon));
         _this.beta1Scalar = globals_1.keep(ops_1.scalar(beta1));
         _this.beta2Scalar = globals_1.keep(ops_1.scalar(beta2));
         globals_1.tidy(function () {
@@ -37,6 +37,10 @@ var AdamOptimizer = (function (_super) {
         _this.oneMinusBeta1 = globals_1.keep(ops_1.scalar(1 - beta1));
         _this.oneMinusBeta2 = globals_1.keep(ops_1.scalar(1 - beta2));
         _this.one = globals_1.keep(ops_1.scalar(1));
+        if (epsilon === null) {
+            epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+        }
+        _this.epsScalar = globals_1.keep(ops_1.scalar(epsilon));
         return _this;
     }
     AdamOptimizer.prototype.applyGradients = function (variableGradients) {

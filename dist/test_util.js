@@ -1,17 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var environment_1 = require("./environment");
 var tensor_1 = require("./tensor");
 var util = require("./util");
-exports.WEBGL_ENVS = {
-    'BACKEND': 'test-webgl'
-};
-exports.CPU_ENVS = {
-    'BACKEND': 'test-cpu'
-};
-exports.ALL_ENVS = {};
-exports.TEST_EPSILON = 1e-3;
+exports.WEBGL_ENVS = [
+    {
+        'BACKEND': 'test-webgl',
+        'WEBGL_RENDER_FLOAT32_ENABLED': true,
+        'WEBGL_DOWNLOAD_FLOAT_ENABLED': true,
+        'WEBGL_VERSION': 1
+    },
+    {
+        'BACKEND': 'test-webgl',
+        'WEBGL_RENDER_FLOAT32_ENABLED': true,
+        'WEBGL_DOWNLOAD_FLOAT_ENABLED': true,
+        'WEBGL_VERSION': 2
+    }
+];
+exports.CPU_ENVS = [{ 'BACKEND': 'test-cpu' }];
+exports.CHROME_CPU_ENVS = [{ 'BACKEND': 'test-cpu', 'IS_CHROME': true }];
+exports.NATIVE_ENV = {};
+exports.BROWSER_ENVS = exports.WEBGL_ENVS.concat(exports.CPU_ENVS);
+exports.ALL_ENVS = [exports.NATIVE_ENV].concat(exports.BROWSER_ENVS);
 function expectArraysClose(actual, expected, epsilon) {
-    if (epsilon === void 0) { epsilon = exports.TEST_EPSILON; }
+    if (epsilon == null) {
+        epsilon = environment_1.ENV.get('TEST_EPSILON');
+    }
     if (!(actual instanceof tensor_1.Tensor) && !(expected instanceof tensor_1.Tensor)) {
         var aType = actual.constructor.name;
         var bType = expected.constructor.name;
@@ -70,7 +84,9 @@ function expectArraysEqual(actual, expected) {
 }
 exports.expectArraysEqual = expectArraysEqual;
 function expectNumbersClose(a, e, epsilon) {
-    if (epsilon === void 0) { epsilon = exports.TEST_EPSILON; }
+    if (epsilon == null) {
+        epsilon = environment_1.ENV.get('TEST_EPSILON');
+    }
     if (!areClose(a, e, epsilon)) {
         throw new Error("Numbers differ: actual === " + a + ", expected === " + e);
     }
@@ -100,4 +116,8 @@ function expectValuesInRange(actual, low, high) {
     }
 }
 exports.expectValuesInRange = expectValuesInRange;
+function expectArrayBuffersEqual(actual, expected) {
+    expect(new Float32Array(actual)).toEqual(new Float32Array(expected));
+}
+exports.expectArrayBuffersEqual = expectArrayBuffersEqual;
 //# sourceMappingURL=test_util.js.map

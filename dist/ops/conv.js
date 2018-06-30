@@ -31,9 +31,9 @@ var ConvOps = (function () {
             util.assert(util.isInt(pad), "Error in conv1d: pad must be an integer when using, " +
                 ("dimRoundingMode " + dimRoundingMode + " but got pad " + pad + "."));
         }
-        util.assert(x3D.shape[2] === filter.shape[1], "Error in conv1d: depth of input (" + x3D.shape[2] + ") must match  " +
+        util.assert(x3D.shape[2] === filter.shape[1], "Error in conv1d: depth of input (" + x3D.shape[2] + ") must match " +
             ("input depth for filter " + filter.shape[1] + "."));
-        util.assert(eitherStridesOrDilationsAreOne(stride, dilation), 'Error in conv1D: Either stride or dilation must be 1.' +
+        util.assert(eitherStridesOrDilationsAreOne(stride, dilation), 'Error in conv1D: Either stride or dilation must be 1. ' +
             ("Got stride " + stride + " and dilation '" + dilation + "'"));
         util.assert(dataFormat === 'NWC', "Error in conv1d: got dataFormat of " + dataFormat + " but only NWC is currently supported.");
         var filter4D = filter.as4D(1, filter.shape[0], filter.shape[1], filter.shape[2]);
@@ -64,9 +64,9 @@ var ConvOps = (function () {
             util.assert(util.isInt(pad), "Error in conv2d: pad must be an integer when using, " +
                 ("dimRoundingMode " + dimRoundingMode + " but got pad " + pad + "."));
         }
-        util.assert(x4D.shape[3] === filter.shape[2], "Error in conv2d: depth of input (" + x4D.shape[3] + ") must match  " +
+        util.assert(x4D.shape[3] === filter.shape[2], "Error in conv2d: depth of input (" + x4D.shape[3] + ") must match " +
             ("input depth for filter " + filter.shape[2] + "."));
-        util.assert(eitherStridesOrDilationsAreOne(strides, dilations), 'Error in conv2D: Either strides or dilations must be 1.' +
+        util.assert(eitherStridesOrDilationsAreOne(strides, dilations), 'Error in conv2D: Either strides or dilations must be 1. ' +
             ("Got strides " + strides + " and dilations '" + dilations + "'"));
         util.assert(dataFormat === 'NHWC', "Error in conv2d: got dataFormat of " + dataFormat + " but only NHWC is currently supported.");
         var convInfo = conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode);
@@ -108,7 +108,7 @@ var ConvOps = (function () {
             ("rank " + filter.rank));
         util.assert(inDepth === filter.shape[2], "Error in conv2dDerInput: depth of input (" + inDepth + ") must " +
             ("match input depth for filter " + filter.shape[2] + "."));
-        util.assert(outDepth === filter.shape[3], "Error in conv2dDerInput: depth of output (" + outDepth + ") must" +
+        util.assert(outDepth === filter.shape[3], "Error in conv2dDerInput: depth of output (" + outDepth + ") must " +
             ("match output depth for filter " + filter.shape[3] + "."));
         if (dimRoundingMode != null) {
             util.assert(util.isInt(pad), "Error in conv2dDerInput: pad must be an integer when using, " +
@@ -164,24 +164,32 @@ var ConvOps = (function () {
             reshapedTo4D = true;
             x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
         }
-        util.assert(x4D.rank === 4, "Error in depthwiseConv2D: input must be rank 4, but got " +
+        util.assert(x4D.rank === 4, "Error in depthwiseConv2d: input must be rank 4, but got " +
             ("rank " + x4D.rank + "."));
-        util.assert(filter.rank === 4, "Error in depthwiseConv2D: filter must be rank 4, but got rank " +
+        util.assert(filter.rank === 4, "Error in depthwiseConv2d: filter must be rank 4, but got rank " +
             (filter.rank + "."));
-        util.assert(x4D.shape[3] === filter.shape[2], "Error in depthwiseConv2D: number of input channels " +
+        util.assert(x4D.shape[3] === filter.shape[2], "Error in depthwiseConv2d: number of input channels " +
             ("(" + x4D.shape[3] + ") must match the inChannels dimension in ") +
             ("filter " + filter.shape[2] + "."));
         if (dilations == null) {
             dilations = [1, 1];
         }
-        util.assert(eitherStridesOrDilationsAreOne(strides, dilations), 'Error in depthwiseConv2d: Either strides or dilations must be 1.' +
+        util.assert(eitherStridesOrDilationsAreOne(strides, dilations), 'Error in depthwiseConv2d: Either strides or dilations must be 1. ' +
             ("Got strides " + strides + " and dilations '" + dilations + "'"));
         if (dimRoundingMode != null) {
-            util.assert(util.isInt(pad), "Error in depthwiseConv2D: pad must be an integer when using, " +
+            util.assert(util.isInt(pad), "Error in depthwiseConv2d: pad must be an integer when using, " +
                 ("dimRoundingMode " + dimRoundingMode + " but got pad " + pad + "."));
         }
         var convInfo = conv_util.computeConv2DInfo(x4D.shape, filter.shape, strides, dilations, pad, dimRoundingMode, true);
-        var res = environment_1.ENV.engine.runKernel(function (backend) { return backend.depthwiseConv2D(x4D, filter, convInfo); }, { x4D: x4D, filter: filter });
+        var grad = function (dy) {
+            util.assert(tupleValuesAreOne(dilations), 'Error in gradient of depthwiseConv2d: dilation rates greater than ' +
+                ("1 are not yet supported. Got dilations '" + dilations + "'"));
+            return {
+                x: function () { return depthwiseConv2dDerInput(x4D.shape, dy, filter, convInfo); },
+                filter: function () { return depthwiseConv2dDerFilter(x4D, dy, filter.shape, convInfo); },
+            };
+        };
+        var res = environment_1.ENV.engine.runKernel(function (backend) { return backend.depthwiseConv2D(x4D, filter, convInfo); }, { x: x4D, filter: filter }, grad);
         if (reshapedTo4D) {
             return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
         }
@@ -262,5 +270,29 @@ function tupleValuesAreOne(param) {
 }
 function eitherStridesOrDilationsAreOne(strides, dilations) {
     return tupleValuesAreOne(strides) || tupleValuesAreOne(dilations);
+}
+function depthwiseConv2dDerInput(xShape, dy, filter, convInfo) {
+    var dy4D = dy;
+    var reshapedTo4D = false;
+    if (dy.rank === 3) {
+        reshapedTo4D = true;
+        dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
+    var res = environment_1.ENV.engine.runKernel(function (backend) { return backend.depthwiseConv2DDerInput(dy4D, filter, convInfo); }, { dy4D: dy4D });
+    if (reshapedTo4D) {
+        return res.as3D(res.shape[1], res.shape[2], res.shape[3]);
+    }
+    return res;
+}
+function depthwiseConv2dDerFilter(x, dy, filterShape, convInfo) {
+    var x4D = x;
+    if (x.rank === 3) {
+        x4D = x.as4D(1, x.shape[0], x.shape[1], x.shape[2]);
+    }
+    var dy4D = dy;
+    if (dy4D.rank === 3) {
+        dy4D = dy.as4D(1, dy.shape[0], dy.shape[1], dy.shape[2]);
+    }
+    return environment_1.ENV.engine.runKernel(function (backend) { return backend.depthwiseConv2DDerFilter(x4D, dy4D, convInfo); }, { x4D: x4D, dy4D: dy4D });
 }
 //# sourceMappingURL=conv.js.map

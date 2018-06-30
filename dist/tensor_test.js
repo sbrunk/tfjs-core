@@ -937,4 +937,35 @@ jasmine_util_1.describeWithFlags('tensor grad', test_util_1.ALL_ENVS, function (
         test_util_1.expectArraysClose(data, [12, 18]);
     });
 });
+jasmine_util_1.describeWithFlags('tensor.data', test_util_1.ALL_ENVS, function () {
+    it('.data() postpones disposal of tensor', function (done) {
+        expect(tf.memory().numTensors).toBe(0);
+        tf.tidy(function () {
+            var a = tf.scalar(5);
+            expect(tf.memory().numTensors).toBe(1);
+            a.square();
+            a.data().then(function (vals) {
+                test_util_1.expectNumbersClose(vals[0], 5);
+            });
+        });
+        setTimeout(function () {
+            expect(tf.memory().numTensors).toBe(0);
+            done();
+        });
+    });
+    it('calling .data() twice works (2 subscribers to a single read)', function (done) {
+        tf.tidy(function () {
+            var a = tf.scalar(5);
+            a.square();
+            a.data().then(function (vals) {
+                test_util_1.expectNumbersClose(vals[0], 5);
+            });
+            a.data()
+                .then(function (vals) {
+                test_util_1.expectNumbersClose(vals[0], 5);
+            })
+                .then(done);
+        });
+    });
+});
 //# sourceMappingURL=tensor_test.js.map

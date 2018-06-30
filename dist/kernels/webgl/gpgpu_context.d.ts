@@ -2,7 +2,9 @@ import { WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, W
 export declare class GPGPUContext {
     gl: WebGLRenderingContext;
     textureFloatExtension: {};
+    textureHalfFloatExtension: {};
     colorBufferFloatExtension: {};
+    colorBufferHalfFloatExtension: {};
     getBufferSubDataAsyncExtension: {};
     loseContextExtension: WebGLLoseContextExtension;
     disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension | WebGL1DisjointQueryTimerExtension;
@@ -13,18 +15,22 @@ export declare class GPGPUContext {
     program: WebGLProgram | null;
     private disposed;
     private autoDebugValidate;
+    private disjoint;
+    private textureConfig;
     constructor(gl?: WebGLRenderingContext);
     dispose(): void;
     enableAutomaticDebugValidation(enabled: boolean): void;
-    createMatrixTexture(rows: number, columns: number): WebGLTexture;
+    createFloat32MatrixTexture(rows: number, columns: number): WebGLTexture;
+    createFloat16MatrixTexture(rows: number, columns: number): WebGLTexture;
+    createUnsignedBytesMatrixTexture(rows: number, columns: number): WebGLTexture;
     uploadPixelDataToTexture(texture: WebGLTexture, pixels: ImageData | HTMLImageElement | HTMLCanvasElement): void;
     createPackedMatrixTexture(rows: number, columns: number): WebGLTexture;
     deleteMatrixTexture(texture: WebGLTexture): void;
     uploadMatrixToTexture(texture: WebGLTexture, rows: number, columns: number, matrix: Float32Array): void;
     uploadMatrixToPackedTexture(texture: WebGLTexture, rows: number, columns: number, matrix: Float32Array): void;
-    downloadMatrixFromTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
+    downloadFloat32MatrixFromOutputTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
+    downloadByteEncodedFloatMatrixFromOutputTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
     downloadMatrixFromTextureAsync(texture: WebGLTexture, rows: number, columns: number): Promise<Float32Array>;
-    downloadMatrixFromRGBAColorTexture(texture: WebGLTexture, rows: number, columns: number, channels: number): Float32Array;
     downloadMatrixFromPackedTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
     private vertexAttrsAreBound;
     createProgram(fragmentShaderSource: string): WebGLProgram;
@@ -49,6 +55,9 @@ export declare class GPGPUContext {
     endQuery(): void;
     private isQueryAvailable(query, queryTimerVersion);
     pollQueryTime(query: WebGLQuery): Promise<number>;
+    private itemsToPoll;
+    pollItems(): void;
+    private addItemToPoll(isDoneFn, resolveFn);
     private getQueryTime(query, queryTimerVersion);
     private downloadMatrixDriverSetup(texture);
     private downloadMatrixDriverTeardown();
@@ -59,3 +68,4 @@ export declare class GPGPUContext {
     private throwIfDisposed();
     private throwIfNoProgram();
 }
+export declare function binSearchLastTrue(arr: Array<() => boolean>): number;

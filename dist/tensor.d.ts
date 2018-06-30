@@ -42,7 +42,8 @@ export declare class Tensor<R extends Rank = Rank> {
     data(): Promise<TypedArray>;
     dataSync(): TypedArray;
     dispose(): void;
-    private isDisposed;
+    private isDisposedInternal;
+    readonly isDisposed: boolean;
     private throwIfDisposed();
     toFloat<T extends this>(this: T): T;
     toInt(): this;
@@ -58,6 +59,7 @@ export declare class Tensor<R extends Rank = Rank> {
     tile<T extends this>(this: T, reps: number[]): T;
     gather<T extends this>(this: T, indices: Tensor1D, axis?: number): T;
     matMul(b: Tensor2D, transposeA?: boolean, transposeB?: boolean): Tensor2D;
+    dot(b: Tensor): Tensor;
     norm(ord?: number | 'euclidean' | 'fro', axis?: number | number[], keepDims?: boolean): Tensor;
     slice<T extends Tensor<R>>(this: T, begin: number | number[], size?: number | number[]): T;
     reverse<T extends Tensor>(this: T, axis?: number | number[]): T;
@@ -66,6 +68,7 @@ export declare class Tensor<R extends Rank = Rank> {
     unstack(x: Tensor, axis?: number): Tensor[];
     pad<T extends Tensor>(this: T, paddings: Array<[number, number]>, constantValue?: number): T;
     batchNormalization(mean: Tensor<R> | Tensor1D, variance: Tensor<R> | Tensor1D, varianceEpsilon?: number, scale?: Tensor<R> | Tensor1D, offset?: Tensor<R> | Tensor1D): Tensor<R>;
+    all<T extends Tensor>(axis?: number | number[], keepDims?: boolean): T;
     logSumExp<T extends Tensor>(axis?: number | number[], keepDims?: boolean): T;
     sum<T extends Tensor>(axis?: number | number[], keepDims?: boolean): T;
     mean<T extends Tensor>(axis?: number | number[], keepDims?: boolean): T;
@@ -83,6 +86,7 @@ export declare class Tensor<R extends Rank = Rank> {
     mul<T extends Tensor>(x: Tensor): T;
     mulStrict<T extends this>(this: T, x: T): T;
     div<T extends Tensor>(x: Tensor): T;
+    floorDiv<T extends Tensor>(x: Tensor): T;
     divStrict<T extends this>(this: T, x: T): T;
     minimum<T extends Tensor>(x: Tensor): T;
     minimumStrict<T extends this>(this: T, x: T): T;
@@ -158,13 +162,15 @@ export declare class Tensor<R extends Rank = Rank> {
     maxPool<T extends Tensor3D | Tensor4D>(this: T, filterSize: [number, number] | number, strides: [number, number] | number, pad: 'valid' | 'same' | number, dimRoundingMode?: 'floor' | 'round' | 'ceil'): T;
     localResponseNormalization<T extends Tensor3D | Tensor4D>(this: T, radius?: number, bias?: number, alpha?: number, beta?: number): T;
     variable(trainable?: boolean, name?: string, dtype?: DataType): Variable<R>;
-    unsortedSegmentSum<T extends Tensor>(this: T, segmentIds: Tensor1D, numSegments: number, axis?: number): T;
+    unsortedSegmentSum<T extends Tensor>(this: T, segmentIds: Tensor1D, numSegments: number): T;
 }
 export declare type Scalar = Tensor<Rank.R0>;
 export declare type Tensor1D = Tensor<Rank.R1>;
 export declare type Tensor2D = Tensor<Rank.R2>;
 export declare type Tensor3D = Tensor<Rank.R3>;
 export declare type Tensor4D = Tensor<Rank.R4>;
+export declare type Tensor5D = Tensor<Rank.R5>;
+export declare type Tensor6D = Tensor<Rank.R6>;
 export declare class Variable<R extends Rank = Rank> extends Tensor<R> {
     trainable: boolean;
     private static nextVarId;

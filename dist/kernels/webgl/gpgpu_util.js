@@ -86,67 +86,80 @@ function createIndexBuffer(gl) {
     return webgl_util.createStaticIndexBuffer(gl, triangleVertexIndices);
 }
 exports.createIndexBuffer = createIndexBuffer;
-function getTextureInternalFormat(gl, numChannels) {
-    if (!environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        return gl.RGBA;
-    }
+function getTextureConfig(gl, textureHalfFloatExtension) {
+    var glany = gl;
+    var internalFormatFloat;
+    var internalFormatHalfFloat;
+    var internalFormatPackedFloat;
+    var textureFormatFloat;
+    var downloadTextureFormat;
+    var downloadUnpackNumChannels;
+    var defaultNumChannels;
+    var textureTypeHalfFloat;
     if (environment_1.ENV.get('WEBGL_VERSION') === 2) {
-        if (numChannels === 4) {
-            return gl.RGBA32F;
-        }
-        return gl.R32F;
+        internalFormatFloat = glany.R32F;
+        internalFormatHalfFloat = glany.R16F;
+        internalFormatPackedFloat = glany.RGBA32F;
+        textureFormatFloat = glany.RED;
+        downloadUnpackNumChannels = 4;
+        defaultNumChannels = 1;
+        textureTypeHalfFloat = glany.HALF_FLOAT;
     }
-    return gl.RGBA;
+    else {
+        internalFormatFloat = gl.RGBA;
+        internalFormatHalfFloat = gl.RGBA;
+        internalFormatPackedFloat = glany.RGBA;
+        textureFormatFloat = gl.RGBA;
+        downloadUnpackNumChannels = 4;
+        defaultNumChannels = 4;
+        textureTypeHalfFloat = textureHalfFloatExtension != null ?
+            textureHalfFloatExtension.HALF_FLOAT_OES :
+            null;
+    }
+    downloadTextureFormat = gl.RGBA;
+    return {
+        internalFormatFloat: internalFormatFloat,
+        internalFormatHalfFloat: internalFormatHalfFloat,
+        internalFormatPackedFloat: internalFormatPackedFloat,
+        textureFormatFloat: textureFormatFloat,
+        downloadTextureFormat: downloadTextureFormat,
+        downloadUnpackNumChannels: downloadUnpackNumChannels,
+        defaultNumChannels: defaultNumChannels,
+        textureTypeHalfFloat: textureTypeHalfFloat
+    };
 }
-function getTextureFormat(gl, numChannels) {
-    if (!environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        return gl.RGBA;
-    }
-    if (environment_1.ENV.get('WEBGL_VERSION') === 2) {
-        if (numChannels === 4) {
-            return gl.RGBA;
-        }
-        return gl.RED;
-    }
-    return gl.RGBA;
-}
-function getTextureType(gl) {
-    if (!environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        return gl.UNSIGNED_BYTE;
-    }
-    return gl.FLOAT;
-}
-function createAndConfigureTexture(gl, width, height, numChannels) {
+exports.getTextureConfig = getTextureConfig;
+function createAndConfigureTexture(gl, width, height, internalFormat, textureFormat, textureType) {
     webgl_util.validateTextureSize(gl, width, height);
     var texture = webgl_util.createTexture(gl);
     var tex2d = gl.TEXTURE_2D;
-    var internalFormat = getTextureInternalFormat(gl, numChannels);
-    var format = getTextureFormat(gl, numChannels);
     webgl_util.callAndCheck(gl, function () { return gl.bindTexture(tex2d, texture); });
     webgl_util.callAndCheck(gl, function () { return gl.texParameteri(tex2d, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); });
     webgl_util.callAndCheck(gl, function () { return gl.texParameteri(tex2d, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); });
     webgl_util.callAndCheck(gl, function () { return gl.texParameteri(tex2d, gl.TEXTURE_MIN_FILTER, gl.NEAREST); });
     webgl_util.callAndCheck(gl, function () { return gl.texParameteri(tex2d, gl.TEXTURE_MAG_FILTER, gl.NEAREST); });
-    webgl_util.callAndCheck(gl, function () { return gl.texImage2D(tex2d, 0, internalFormat, width, height, 0, format, getTextureType(gl), null); });
+    webgl_util.callAndCheck(gl, function () { return gl.texImage2D(tex2d, 0, internalFormat, width, height, 0, textureFormat, textureType, null); });
     webgl_util.callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, null); });
     return texture;
 }
-function createMatrixTexture(gl, rows, columns) {
+function createFloat32MatrixTexture(gl, rows, columns, textureConfig) {
     var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), width = _a[0], height = _a[1];
-    var numChannels = 1;
-    return createAndConfigureTexture(gl, width, height, numChannels);
+    return createAndConfigureTexture(gl, width, height, textureConfig.internalFormatFloat, textureConfig.textureFormatFloat, gl.FLOAT);
 }
-exports.createMatrixTexture = createMatrixTexture;
-function createColorMatrixTexture(gl, rows, columns) {
-    var _a = tex_util.getColorMatrixTextureShapeWidthHeight(rows, columns), width = _a[0], height = _a[1];
-    var numChannels = 4;
-    return createAndConfigureTexture(gl, width, height, numChannels);
+exports.createFloat32MatrixTexture = createFloat32MatrixTexture;
+function createFloat16MatrixTexture(gl, rows, columns, textureConfig) {
+    var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), width = _a[0], height = _a[1];
+    return createAndConfigureTexture(gl, width, height, textureConfig.internalFormatFloat, textureConfig.textureFormatFloat, textureConfig.textureTypeHalfFloat);
 }
-exports.createColorMatrixTexture = createColorMatrixTexture;
-function createPackedMatrixTexture(gl, rows, columns) {
+exports.createFloat16MatrixTexture = createFloat16MatrixTexture;
+function createUnsignedBytesMatrixTexture(gl, rows, columns, textureConfig) {
+    var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), width = _a[0], height = _a[1];
+    return createAndConfigureTexture(gl, width, height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE);
+}
+exports.createUnsignedBytesMatrixTexture = createUnsignedBytesMatrixTexture;
+function createPackedMatrixTexture(gl, rows, columns, textureConfig) {
     var _a = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns), width = _a[0], height = _a[1];
-    var numChannels = 4;
-    return createAndConfigureTexture(gl, width, height, numChannels);
+    return createAndConfigureTexture(gl, width, height, textureConfig.internalFormatPackedFloat, gl.RGBA, gl.FLOAT);
 }
 exports.createPackedMatrixTexture = createPackedMatrixTexture;
 function bindVertexProgramAttributeStreams(gl, program, vertexBuffer) {
@@ -165,116 +178,80 @@ function uploadPixelDataToTexture(gl, texture, pixels) {
     webgl_util.callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, null); });
 }
 exports.uploadPixelDataToTexture = uploadPixelDataToTexture;
-function uploadDataToTexture(gl, texture, width, height, data, numChannels) {
-    var textureFormat = getTextureFormat(gl, numChannels);
+function uploadDataToTexture(gl, texture, width, height, data, textureFormat) {
     webgl_util.validateTextureSize(gl, width, height);
     webgl_util.callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, texture); });
-    webgl_util.callAndCheck(gl, function () { return gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, getTextureType(gl), data); });
+    webgl_util.callAndCheck(gl, function () { return gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, textureFormat, gl.FLOAT, data); });
     webgl_util.callAndCheck(gl, function () { return gl.bindTexture(gl.TEXTURE_2D, null); });
 }
-function uploadMatrixToTexture(gl, texture, rows, columns, matrix, numChannels) {
+function uploadMatrixToTexture(gl, texture, rows, columns, matrix, numChannels, textureConfig) {
     var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
     var unpackedArray;
-    if (environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED')) {
-        var channelsPerTexture = numChannels === 1 ? webgl_util.getChannelsPerTexture() : numChannels;
-        if (channelsPerTexture === 1) {
-            unpackedArray = matrix;
-        }
-        else {
-            unpackedArray =
-                new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(matrix.length, channelsPerTexture));
-            tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, channelsPerTexture);
-        }
+    if (textureConfig.defaultNumChannels === 1) {
+        unpackedArray = matrix;
     }
     else {
-        unpackedArray = tex_util.encodeFloatArray(matrix);
+        unpackedArray =
+            new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(matrix.length, numChannels));
+        tex_util.encodeMatrixToUnpackedArray(matrix, unpackedArray, numChannels);
     }
-    uploadDataToTexture(gl, texture, w, h, unpackedArray, numChannels);
+    uploadDataToTexture(gl, texture, w, h, unpackedArray, textureConfig.textureFormatFloat);
 }
 exports.uploadMatrixToTexture = uploadMatrixToTexture;
-function uploadMatrixToPackedTexture(gl, texture, rows, columns, matrix) {
+function uploadMatrixToPackedTexture(gl, texture, rows, columns, matrix, textureConfig) {
     var _a = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
     var packedRGBA = new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
     tex_util.encodeMatrixToPackedRGBA(matrix, rows, columns, packedRGBA);
-    var numChannels = 4;
-    uploadDataToTexture(gl, texture, w, h, packedRGBA, numChannels);
+    uploadDataToTexture(gl, texture, w, h, packedRGBA, gl.RGBA);
 }
 exports.uploadMatrixToPackedTexture = uploadMatrixToPackedTexture;
-function getDownloadTargetArrayBuffer(rows, columns, channelsPerTexture) {
-    var isFloatTexture = environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
-    var downloadTarget;
-    if (isFloatTexture) {
-        downloadTarget =
-            new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(rows * columns, channelsPerTexture));
-    }
-    else {
-        downloadTarget = new Uint8Array(rows * columns * channelsPerTexture);
-    }
-    return downloadTarget;
-}
-function decodeDownloadTargetArrayBuffer(downloadTarget, rows, columns, channelsPerPixel) {
-    var isFloatTexture = environment_1.ENV.get('WEBGL_FLOAT_TEXTURE_ENABLED');
-    if (isFloatTexture) {
-        var matrix = new Float32Array(rows * columns);
-        tex_util.decodeMatrixFromUnpackedArray(downloadTarget, matrix, channelsPerPixel);
-        return matrix;
-    }
-    else {
-        return tex_util.decodeToFloatArray(downloadTarget);
-    }
-}
-function downloadMatrixFromOutputTextureAsync(gl, getBufferSubDataAsyncExtension, rows, columns) {
+function downloadMatrixFromOutputTextureAsync(gl, getBufferSubDataAsyncExtension, rows, columns, textureConfig) {
     return __awaiter(this, void 0, void 0, function () {
-        var gl2, channelsPerPixel, downloadTarget, bufferSizeBytes, buffer;
+        var gl2, downloadTarget, bufferSizeBytes, buffer, matrix;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     gl2 = gl;
-                    channelsPerPixel = 4;
-                    downloadTarget = getDownloadTargetArrayBuffer(rows, columns, channelsPerPixel);
+                    downloadTarget = new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(rows * columns, textureConfig.downloadUnpackNumChannels));
                     bufferSizeBytes = downloadTarget instanceof Float32Array ?
                         downloadTarget.length * 4 :
                         downloadTarget;
                     buffer = gl.createBuffer();
                     webgl_util.callAndCheck(gl, function () { return gl.bindBuffer(gl2.PIXEL_PACK_BUFFER, buffer); });
                     webgl_util.callAndCheck(gl, function () { return gl.bufferData(gl2.PIXEL_PACK_BUFFER, bufferSizeBytes, gl.STATIC_DRAW); });
-                    webgl_util.callAndCheck(gl, function () {
-                        return gl2.readPixels(0, 0, columns, rows, gl.RGBA, getTextureType(gl), 0);
-                    });
+                    webgl_util.callAndCheck(gl, function () { return gl2.readPixels(0, 0, columns, rows, gl.RGBA, gl.FLOAT, 0); });
                     return [4, getBufferSubDataAsyncExtension.getBufferSubDataAsync(gl2.PIXEL_PACK_BUFFER, 0, downloadTarget)];
                 case 1:
                     _a.sent();
-                    return [2, decodeDownloadTargetArrayBuffer(downloadTarget, rows, columns, channelsPerPixel)];
+                    matrix = new Float32Array(rows * columns);
+                    tex_util.decodeMatrixFromUnpackedArray(downloadTarget, matrix, textureConfig.downloadUnpackNumChannels);
+                    return [2, matrix];
             }
         });
     });
 }
 exports.downloadMatrixFromOutputTextureAsync = downloadMatrixFromOutputTextureAsync;
-function downloadMatrixFromOutputTexture(gl, rows, columns) {
+function downloadFloat32MatrixFromOutputTexture(gl, rows, columns, textureConfig) {
     var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
-    var channelsPerPixel = 4;
-    var downloadTarget = getDownloadTargetArrayBuffer(rows, columns, channelsPerPixel);
-    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, w, h, gl.RGBA, getTextureType(gl), downloadTarget); });
-    return decodeDownloadTargetArrayBuffer(downloadTarget, rows, columns, channelsPerPixel);
-}
-exports.downloadMatrixFromOutputTexture = downloadMatrixFromOutputTexture;
-function downloadMatrixFromRGBAColorTexture(gl, rows, columns, channels) {
-    var size = rows * columns * 4;
-    var downloadTarget = new Uint8Array(size);
-    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, columns, rows, gl.RGBA, gl.UNSIGNED_BYTE, downloadTarget); });
-    var packedRGBA = new Float32Array(size);
-    for (var i = 0; i < downloadTarget.length; i++) {
-        packedRGBA[i] = downloadTarget[i];
-    }
-    var matrix = new Float32Array(rows * columns * channels);
-    tex_util.decodeMatrixFromUnpackedColorRGBAArray(packedRGBA, matrix, channels);
+    var downloadTarget = new Float32Array(tex_util.getUnpackedArraySizeFromMatrixSize(rows * columns, textureConfig.downloadUnpackNumChannels));
+    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, w, h, textureConfig.downloadTextureFormat, gl.FLOAT, downloadTarget); });
+    var matrix = new Float32Array(rows * columns);
+    tex_util.decodeMatrixFromUnpackedArray(downloadTarget, matrix, textureConfig.downloadUnpackNumChannels);
     return matrix;
 }
-exports.downloadMatrixFromRGBAColorTexture = downloadMatrixFromRGBAColorTexture;
-function downloadMatrixFromPackedOutputTexture(gl, rows, columns) {
+exports.downloadFloat32MatrixFromOutputTexture = downloadFloat32MatrixFromOutputTexture;
+function downloadByteEncodedFloatMatrixFromOutputTexture(gl, rows, columns, textureConfig) {
+    var _a = tex_util.getUnpackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
+    var numChannels = 4;
+    var downloadTarget = new Uint8Array(tex_util.getUnpackedArraySizeFromMatrixSize(rows * columns, numChannels));
+    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, w, h, textureConfig.downloadTextureFormat, gl.UNSIGNED_BYTE, downloadTarget); });
+    return new Float32Array(downloadTarget.buffer);
+}
+exports.downloadByteEncodedFloatMatrixFromOutputTexture = downloadByteEncodedFloatMatrixFromOutputTexture;
+function downloadMatrixFromPackedOutputTexture(gl, rows, columns, textureConfig) {
     var _a = tex_util.getPackedMatrixTextureShapeWidthHeight(rows, columns), w = _a[0], h = _a[1];
     var packedRGBA = new Float32Array(tex_util.getPackedRGBAArraySizeFromMatrixShape(rows, columns));
-    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, w, h, gl.RGBA, getTextureType(gl), packedRGBA); });
+    webgl_util.callAndCheck(gl, function () { return gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, packedRGBA); });
     var matrix = new Float32Array(rows * columns);
     return tex_util.decodeMatrixFromPackedRGBA(packedRGBA, rows, columns, matrix);
 }

@@ -52,11 +52,27 @@ var backend_util = require("./backend_util");
 var MathBackendCPU = (function () {
     function MathBackendCPU() {
         this.data = new WeakMap();
-        if (typeof document !== 'undefined') {
+        this.firstUse = true;
+        if (environment_1.ENV.get('IS_BROWSER')) {
             this.canvas = document.createElement('canvas');
         }
     }
     MathBackendCPU.prototype.register = function (dataId, shape, dtype) {
+        if (this.firstUse) {
+            this.firstUse = false;
+            if (environment_1.ENV.get('IS_NODE')) {
+                console.warn('\n============================\n' +
+                    'Hi there 👋. Looks like you are running TensorFlow.js in ' +
+                    'Node.js. To speed things up dramatically, install our node ' +
+                    'backend, which binds to TensorFlow C++, by running ' +
+                    'npm i @tensorflow/tfjs-node, ' +
+                    'or npm i @tensorflow/tfjs-node-gpu if you have CUDA. ' +
+                    'Then call require(\'tensorflow/tfjs-node\'); (-gpu ' +
+                    'suffix for CUDA) at the start of your program. ' +
+                    'Visit https://github.com/tensorflow/tfjs-node for more details.' +
+                    '\n============================\n');
+            }
+        }
         if (this.data.has(dataId)) {
             throw new Error("Data buffer is already registered");
         }
@@ -255,17 +271,14 @@ var MathBackendCPU = (function () {
     MathBackendCPU.prototype.multiply = function (a, b) {
         return this.broadcastedBinaryOp(a, b, types.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue * bValue; });
     };
-    MathBackendCPU.prototype.divide = function (a, b) {
-        var op;
-        var outputDtype;
-        if (a.dtype === 'int32' && b.dtype === 'int32') {
-            outputDtype = 'int32';
-            op = function (a, b) { return Math.floor(a / b); };
-        }
-        else {
-            outputDtype = 'float32';
-            op = function (a, b) { return a / b; };
-        }
+    MathBackendCPU.prototype.realDivide = function (a, b) {
+        var op = function (a, b) { return a / b; };
+        var outputDtype = 'float32';
+        return this.broadcastedBinaryOp(a, b, outputDtype, op);
+    };
+    MathBackendCPU.prototype.floorDiv = function (a, b) {
+        var op = function (a, b) { return Math.floor(a / b); };
+        var outputDtype = 'int32';
         return this.broadcastedBinaryOp(a, b, outputDtype, op);
     };
     MathBackendCPU.prototype.sum = function (x, axes) {
@@ -285,6 +298,20 @@ var MathBackendCPU = (function () {
             vals[i] = sum;
         }
         return result;
+    };
+    MathBackendCPU.prototype.unsortedSegmentSum = function (x, segmentIds, numSegments) {
+        var res = [];
+        var numIters = x.rank - segmentIds.rank;
+        for (var i = 0; i < numIters; ++i) {
+            segmentIds = segmentIds.expandDims(i + 1);
+        }
+        for (var i = 0; i < numSegments; ++i) {
+            var segmentId = ops.scalar(i, 'int32');
+            var mask = ops.equal(segmentId, segmentIds).asType('float32');
+            var sum = mask.mul(x).sum(0);
+            res.push(sum);
+        }
+        return ops.stack(res);
     };
     MathBackendCPU.prototype.argMin = function (x, axis) {
         var axes = [axis];
@@ -333,6 +360,10 @@ var MathBackendCPU = (function () {
         return result;
     };
     MathBackendCPU.prototype.cumsum = function (x, axis, exclusive, reverse) {
+        if (axis !== x.rank - 1) {
+            throw new Error("backend.cumsum in CPU expects an inner-most axis=" + (x.rank - 1) + " " +
+                ("but got axis=" + axis));
+        }
         var resultDtype = types.upcastType(x.dtype, 'int32');
         var result = ops.zeros(x.shape, resultDtype);
         var vals = result.dataSync();
@@ -461,7 +492,7 @@ var MathBackendCPU = (function () {
         var aVals = x.dataSync();
         for (var i = 0; i < vals.length; ++i) {
             var offset = i * reduceSize;
-            var min = aVals[0];
+            var min = aVals[offset];
             for (var j = 0; j < reduceSize; ++j) {
                 var value = aVals[offset + j];
                 if (value < min) {
@@ -508,6 +539,24 @@ var MathBackendCPU = (function () {
     };
     MathBackendCPU.prototype.maximum = function (a, b) {
         return this.broadcastedBinaryOp(a, b, a.dtype, function (aVal, bVal) { return Math.max(aVal, bVal); });
+    };
+    MathBackendCPU.prototype.all = function (x, axes) {
+        axis_util.assertAxesAreInnerMostDims('all', axes, x.rank);
+        var _a = axis_util.computeOutAndReduceShapes(x.shape, axes), outShape = _a[0], reduceShape = _a[1];
+        var result = ops.zeros(outShape, x.dtype);
+        var reduceSize = util.sizeFromShape(reduceShape);
+        var vals = result.dataSync();
+        var aVals = x.dataSync();
+        for (var i = 0; i < vals.length; ++i) {
+            var offset = i * reduceSize;
+            var all = aVals[offset];
+            for (var j = 0; j < reduceSize; ++j) {
+                var value = aVals[offset + j];
+                all = all && value;
+            }
+            vals[i] = all;
+        }
+        return result;
     };
     MathBackendCPU.prototype.squaredDifference = function (a, b) {
         return this.broadcastedBinaryOp(a, b, a.dtype, function (aVal, bVal) {
@@ -1034,6 +1083,85 @@ var MathBackendCPU = (function () {
         }
         return y.toTensor();
     };
+    MathBackendCPU.prototype.depthwiseConv2DDerInput = function (dy, filter, convInfo) {
+        var dx = ops.buffer(convInfo.inShape, 'float32');
+        var dxValues = dx.values;
+        var _a = dx.strides, dxS0 = _a[0], dxS1 = _a[1], dxS2 = _a[2];
+        var dyValues = dy.dataSync();
+        var _b = dy.strides, dyS0 = _b[0], dyS1 = _b[1], dyS2 = _b[2];
+        var fltValues = filter.dataSync();
+        var _c = filter.strides, fltS0 = _c[0], fltS1 = _c[1], fltS2 = _c[2];
+        var batchSize = convInfo.batchSize, filterHeight = convInfo.filterHeight, filterWidth = convInfo.filterWidth, inChannels = convInfo.inChannels, inHeight = convInfo.inHeight, inWidth = convInfo.inWidth, outChannels = convInfo.outChannels, outHeight = convInfo.outHeight, outWidth = convInfo.outWidth, strideHeight = convInfo.strideHeight, strideWidth = convInfo.strideWidth;
+        var topPad = filterHeight - 1 - convInfo.padInfo.top;
+        var leftPad = filterWidth - 1 - convInfo.padInfo.left;
+        var chMul = outChannels / inChannels;
+        for (var b = 0; b < batchSize; ++b) {
+            for (var d1 = 0; d1 < inChannels; ++d1) {
+                for (var xR = 0; xR < inHeight; ++xR) {
+                    var xRCorner = xR - topPad;
+                    var xRMin = Math.max(0, Math.ceil(xRCorner / strideHeight));
+                    var yRMax = Math.min(outHeight, (filterHeight + xRCorner) / strideHeight);
+                    for (var xC = 0; xC < inWidth; ++xC) {
+                        var xCCorner = xC - leftPad;
+                        var xCMin = Math.max(0, Math.ceil(xCCorner / strideWidth));
+                        var yCMax = Math.min(outWidth, (filterWidth + xCCorner) / strideWidth);
+                        var dotProd = 0;
+                        for (var yR = xRMin; yR < yRMax; ++yR) {
+                            var wR = yR * strideHeight - xRCorner;
+                            for (var yC = xCMin; yC < yCMax; ++yC) {
+                                var wC = yC * strideWidth - xCCorner;
+                                var dyOffset = dyS0 * b + dyS1 * yR + dyS2 * yC;
+                                var fltOffset = fltS0 * (filterHeight - 1 - wR) +
+                                    fltS1 * (filterWidth - 1 - wC) + fltS2 * d1;
+                                for (var dm = 0; dm < chMul; ++dm) {
+                                    var d2 = d1 * chMul + dm;
+                                    var pixel = dyValues[dyOffset + d2];
+                                    var weight = fltValues[fltOffset + dm];
+                                    dotProd += pixel * weight;
+                                }
+                            }
+                        }
+                        dxValues[dxS0 * b + dxS1 * xR + dxS2 * xC + d1] = dotProd;
+                    }
+                }
+            }
+        }
+        return dx.toTensor();
+    };
+    MathBackendCPU.prototype.depthwiseConv2DDerFilter = function (x, dy, convInfo) {
+        var strideHeight = convInfo.strideHeight;
+        var strideWidth = convInfo.strideWidth;
+        var filterHeight = convInfo.filterHeight;
+        var filterWidth = convInfo.filterWidth;
+        var dW = ops.buffer(convInfo.filterShape, 'float32');
+        var leftPad = convInfo.padInfo.left;
+        var topPad = convInfo.padInfo.top;
+        var chMul = convInfo.outChannels / convInfo.inChannels;
+        for (var wR = 0; wR < filterHeight; ++wR) {
+            var yRMin = Math.max(0, Math.ceil((topPad - wR) / strideHeight));
+            var yRMax = Math.min(convInfo.outHeight, (convInfo.inHeight + topPad - wR) / strideHeight);
+            for (var wC = 0; wC < filterWidth; ++wC) {
+                var yCMin = Math.max(0, Math.ceil((leftPad - wC) / strideWidth));
+                var yCMax = Math.min(convInfo.outWidth, (convInfo.inWidth + leftPad - wC) / strideWidth);
+                for (var d2 = 0; d2 < convInfo.outChannels; ++d2) {
+                    var d1 = Math.trunc(d2 / chMul);
+                    var dm = d2 % chMul;
+                    var dotProd = 0;
+                    for (var b = 0; b < convInfo.batchSize; ++b) {
+                        for (var yR = yRMin; yR < yRMax; ++yR) {
+                            var xR = wR + yR * strideHeight - topPad;
+                            for (var yC = yCMin; yC < yCMax; ++yC) {
+                                var xC = wC + yC * strideWidth - leftPad;
+                                dotProd += x.get(b, xR, xC, d1) * dy.get(b, yR, yC, d2);
+                            }
+                        }
+                    }
+                    dW.set(dotProd, wR, wC, d1, dm);
+                }
+            }
+        }
+        return dW.toTensor();
+    };
     MathBackendCPU.prototype.tile = function (x, reps) {
         var newShape = new Array(x.rank);
         for (var i = 0; i < newShape.length; i++) {
@@ -1460,9 +1588,11 @@ var MathBackendCPU = (function () {
         var res = new Float32Array(indices.size * depth);
         res.fill(offValue);
         for (var event_3 = 0; event_3 < indices.size; ++event_3) {
-            res[event_3 * depth + indices.get(event_3)] = onValue;
+            if (indices.get(event_3) >= 0 && indices.get(event_3) < depth) {
+                res[event_3 * depth + indices.get(event_3)] = onValue;
+            }
         }
-        return ops.tensor2d(res, [indices.size, depth]);
+        return ops.tensor2d(res, [indices.size, depth], 'int32');
     };
     MathBackendCPU.prototype.broadcastedBinaryOp = function (a, b, dtype, op) {
         var newShape = broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);

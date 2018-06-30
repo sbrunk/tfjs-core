@@ -39,6 +39,7 @@ var environment_1 = require("../environment");
 var util_1 = require("../util");
 var io_utils_1 = require("./io_utils");
 var router_registry_1 = require("./router_registry");
+var weights_loader_1 = require("./weights_loader");
 var BrowserHTTPRequest = (function () {
     function BrowserHTTPRequest(path, requestInit) {
         this.DEFAULT_METHOD = 'POST';
@@ -95,6 +96,50 @@ var BrowserHTTPRequest = (function () {
             });
         });
     };
+    BrowserHTTPRequest.prototype.load = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var modelConfigRequest, modelConfig, modelTopology, weightsManifest, weightSpecs, weightData, weightsManifest_1, _i, weightsManifest_2, entry, pathPrefix_1, fetchURLs_1, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4, fetch(this.path, this.requestInit)];
+                    case 1:
+                        modelConfigRequest = _b.sent();
+                        return [4, modelConfigRequest.json()];
+                    case 2:
+                        modelConfig = _b.sent();
+                        modelTopology = modelConfig['modelTopology'];
+                        weightsManifest = modelConfig['weightsManifest'];
+                        if (modelTopology == null && weightsManifest == null) {
+                            throw new Error("The JSON from HTTP path " + this.path + " contains neither model " +
+                                "topology or manifest for weights.");
+                        }
+                        if (!(weightsManifest != null)) return [3, 4];
+                        weightsManifest_1 = modelConfig['weightsManifest'];
+                        weightSpecs = [];
+                        for (_i = 0, weightsManifest_2 = weightsManifest_1; _i < weightsManifest_2.length; _i++) {
+                            entry = weightsManifest_2[_i];
+                            weightSpecs.push.apply(weightSpecs, entry.weights);
+                        }
+                        pathPrefix_1 = this.path.substring(0, this.path.lastIndexOf('/'));
+                        if (!pathPrefix_1.endsWith('/')) {
+                            pathPrefix_1 = pathPrefix_1 + '/';
+                        }
+                        fetchURLs_1 = [];
+                        weightsManifest_1.forEach(function (weightsGroup) {
+                            weightsGroup.paths.forEach(function (path) {
+                                fetchURLs_1.push(pathPrefix_1 + path);
+                            });
+                        });
+                        _a = io_utils_1.concatenateArrayBuffers;
+                        return [4, weights_loader_1.loadWeightsAsArrayBuffer(fetchURLs_1, this.requestInit)];
+                    case 3:
+                        weightData = _a.apply(void 0, [_b.sent()]);
+                        _b.label = 4;
+                    case 4: return [2, { modelTopology: modelTopology, weightSpecs: weightSpecs, weightData: weightData }];
+                }
+            });
+        });
+    };
     BrowserHTTPRequest.URL_SCHEMES = ['http://', 'https://'];
     return BrowserHTTPRequest;
 }());
@@ -114,6 +159,7 @@ exports.httpRequestRouter = function (url) {
     }
 };
 router_registry_1.IORouterRegistry.registerSaveRouter(exports.httpRequestRouter);
+router_registry_1.IORouterRegistry.registerLoadRouter(exports.httpRequestRouter);
 function browserHTTPRequest(path, requestInit) {
     return new BrowserHTTPRequest(path, requestInit);
 }

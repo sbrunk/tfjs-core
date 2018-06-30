@@ -201,21 +201,4 @@ describe('tex_util decodeMatrixFromPackedRGBA', function () {
         test_util_1.expectArraysClose(matrix, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
     });
 });
-describe('tex_util_float_packing', function () {
-    it('packs a float32array as a uint8 array', function () {
-        var elements = randomArrayInRange(1000, tex_util.FLOAT_MIN, tex_util.FLOAT_MAX);
-        var matrix = new Float32Array(elements);
-        var uintArray = tex_util.encodeFloatArray(matrix);
-        var floatArray = tex_util.decodeToFloatArray(uintArray);
-        test_util_1.expectArraysClose(matrix, floatArray);
-    });
-});
-function randomArrayInRange(n, minValue, maxValue) {
-    var v = new Float32Array(n);
-    var range = maxValue - minValue;
-    for (var i = 0; i < n; ++i) {
-        v[i] = (Math.random() * range) + minValue;
-    }
-    return v;
-}
 //# sourceMappingURL=tex_util_test.js.map

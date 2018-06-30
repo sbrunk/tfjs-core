@@ -15,6 +15,7 @@ var globals_1 = require("../globals");
 var ops_1 = require("../ops/ops");
 var serialization_1 = require("../serialization");
 var optimizer_1 = require("./optimizer");
+var optimizer_utils = require("./optimizer_utils");
 var AdagradOptimizer = (function (_super) {
     __extends(AdagradOptimizer, _super);
     function AdagradOptimizer(learningRate, initialAccumulatorValue) {
@@ -24,7 +25,8 @@ var AdagradOptimizer = (function (_super) {
         _this.initialAccumulatorValue = initialAccumulatorValue;
         _this.accumulatedGrads = {};
         _this.c = globals_1.keep(ops_1.scalar(-learningRate));
-        _this.epsilon = globals_1.keep(ops_1.scalar(1e-8));
+        var epsilon = optimizer_utils.getOptimizerDefaultEpsilonValue();
+        _this.epsilon = globals_1.keep(ops_1.scalar(epsilon));
         return _this;
     }
     AdagradOptimizer.prototype.applyGradients = function (variableGradients) {

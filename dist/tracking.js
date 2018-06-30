@@ -41,7 +41,7 @@ var Tracking = (function () {
         return result;
     };
     Tracking.dispose = function (container) {
-        var tensors = util_1.extractTensorsFromAny(container);
+        var tensors = util_1.getTensorsInContainer(container);
         tensors.forEach(function (tensor) { return tensor.dispose(); });
     };
     Tracking.keep = function (result) {
@@ -53,6 +53,9 @@ var Tracking = (function () {
     __decorate([
         doc_1.doc({ heading: 'Performance', subheading: 'Memory' })
     ], Tracking, "tidy", null);
+    __decorate([
+        doc_1.doc({ heading: 'Performance', subheading: 'Memory' })
+    ], Tracking, "dispose", null);
     __decorate([
         doc_1.doc({ heading: 'Performance', subheading: 'Memory' })
     ], Tracking, "keep", null);

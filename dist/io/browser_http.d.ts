@@ -7,6 +7,7 @@ export declare class BrowserHTTPRequest implements IOHandler {
     static readonly URL_SCHEMES: string[];
     constructor(path: string, requestInit?: RequestInit);
     save(modelArtifacts: ModelArtifacts): Promise<SaveResult>;
+    load(): Promise<ModelArtifacts>;
 }
 export declare const httpRequestRouter: IORouter;
 export declare function browserHTTPRequest(path: string, requestInit?: RequestInit): IOHandler;

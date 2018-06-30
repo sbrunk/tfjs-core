@@ -1,4 +1,4 @@
-import { Tensor, Tensor1D } from '../tensor';
+import { Tensor } from '../tensor';
 export declare class ReductionOps {
     static logSumExp<T extends Tensor>(x: Tensor, axis?: number | number[], keepDims?: boolean): T;
     static sum<T extends Tensor>(x: Tensor, axis?: number | number[], keepDims?: boolean): T;
@@ -7,9 +7,9 @@ export declare class ReductionOps {
     static max<T extends Tensor>(x: Tensor, axis?: number | number[], keepDims?: boolean): T;
     static argMin<T extends Tensor>(x: Tensor, axis?: number): T;
     static argMax<T extends Tensor>(x: Tensor, axis?: number): T;
+    static all<T extends Tensor>(x: Tensor, axis?: number | number[], keepDims?: boolean): T;
     static moments(x: Tensor, axis?: number | number[], keepDims?: boolean): {
         mean: Tensor;
         variance: Tensor;
     };
-    static unsortedSegmentSum<T extends Tensor>(x: T, segmentIds: Tensor1D, numSegments: number, axis?: number): T;
 }

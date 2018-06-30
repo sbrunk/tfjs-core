@@ -22,6 +22,7 @@ export interface GPGPUBinary {
 export interface TensorData<T extends Tensor> {
     tensor: T;
     texData: TextureData;
+    isUniform: boolean;
 }
 export declare function compileProgram<T extends Tensor, K extends Tensor>(gpgpu: GPGPUContext, program: GPGPUProgram, inputs: Array<TensorData<T>>, output: TensorData<K>): GPGPUBinary;
 export declare function runProgram<T extends Tensor, K extends Tensor>(binary: GPGPUBinary, inputs: Array<TensorData<T>>, output: TensorData<K>, customSetup?: (gpgpu: GPGPUContext, webGLProgram: WebGLProgram) => void): void;

@@ -38,10 +38,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ops_1 = require("../ops/ops");
 var util = require("../util");
 var types_1 = require("./types");
+function loadWeightsAsArrayBuffer(fetchURLs, requestOptions) {
+    return __awaiter(this, void 0, void 0, function () {
+        var requests, responses, buffers;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    requests = fetchURLs.map(function (fetchURL) { return fetch(fetchURL, requestOptions); });
+                    return [4, Promise.all(requests)];
+                case 1:
+                    responses = _a.sent();
+                    return [4, Promise.all(responses.map(function (response) { return response.arrayBuffer(); }))];
+                case 2:
+                    buffers = _a.sent();
+                    return [2, buffers];
+            }
+        });
+    });
+}
+exports.loadWeightsAsArrayBuffer = loadWeightsAsArrayBuffer;
 function loadWeights(manifest, filePathPrefix, weightNames, requestOptions) {
     if (filePathPrefix === void 0) { filePathPrefix = ''; }
     return __awaiter(this, void 0, void 0, function () {
-        var groupIndicesToFetchMap, groupWeightsToFetch, weightsFound, allManifestWeightNames, weightsNotFound, groupIndicesToFetch, requests, responses, buffers, weightsTensorMap, bufferIndexOffset;
+        var groupIndicesToFetchMap, groupWeightsToFetch, weightsFound, allManifestWeightNames, weightsNotFound, groupIndicesToFetch, fetchUrls, buffers, weightsTensorMap, bufferIndexOffset;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -96,19 +115,16 @@ function loadWeights(manifest, filePathPrefix, weightNames, requestOptions) {
                         }
                         return accumulator;
                     }, []);
-                    requests = [];
+                    fetchUrls = [];
                     groupIndicesToFetch.forEach(function (i) {
                         manifest[i].paths.forEach(function (filepath) {
                             var fetchUrl = filePathPrefix +
                                 (!filePathPrefix.endsWith('/') ? '/' : '') + filepath;
-                            requests.push(fetch(fetchUrl, requestOptions));
+                            fetchUrls.push(fetchUrl);
                         });
                     });
-                    return [4, Promise.all(requests)];
+                    return [4, loadWeightsAsArrayBuffer(fetchUrls, requestOptions)];
                 case 1:
-                    responses = _a.sent();
-                    return [4, Promise.all(responses.map(function (response) { return response.arrayBuffer(); }))];
-                case 2:
                     buffers = _a.sent();
                     weightsTensorMap = {};
                     bufferIndexOffset = 0;

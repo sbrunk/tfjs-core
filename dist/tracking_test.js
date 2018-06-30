@@ -133,4 +133,167 @@ jasmine_util_1.describeWithFlags('time cpu', test_util_1.CPU_ENVS, function () {
         });
     }); });
 });
+jasmine_util_1.describeWithFlags('tidy', test_util_1.ALL_ENVS, function () {
+    it('returns Tensor', function () {
+        tf.tidy(function () {
+            var a = tf.tensor1d([1, 2, 3]);
+            var b = tf.tensor1d([0, 0, 0]);
+            expect(tf.memory().numTensors).toBe(2);
+            tf.tidy(function () {
+                var result = tf.tidy(function () {
+                    b = tf.addStrict(a, b);
+                    b = tf.addStrict(a, b);
+                    b = tf.addStrict(a, b);
+                    return tf.add(a, b);
+                });
+                expect(tf.memory().numTensors).toBe(2 + 1);
+                test_util_1.expectArraysClose(result, [4, 8, 12]);
+            });
+            expect(tf.memory().numTensors).toBe(2);
+        });
+        expect(tf.memory().numTensors).toBe(0);
+    });
+    it('multiple disposes does not affect num arrays', function () {
+        expect(tf.memory().numTensors).toBe(0);
+        var a = tf.tensor1d([1, 2, 3]);
+        var b = tf.tensor1d([1, 2, 3]);
+        expect(tf.memory().numTensors).toBe(2);
+        a.dispose();
+        a.dispose();
+        expect(tf.memory().numTensors).toBe(1);
+        b.dispose();
+        expect(tf.memory().numTensors).toBe(0);
+    });
+    it('allows primitive types', function () {
+        var a = tf.tidy(function () { return 5; });
+        expect(a).toBe(5);
+        var b = tf.tidy(function () { return 'hello'; });
+        expect(b).toBe('hello');
+    });
+    it('allows complex types', function () {
+        var res = tf.tidy(function () {
+            return { a: tf.scalar(1), b: 'hello', c: [tf.scalar(2), 'world'] };
+        });
+        test_util_1.expectArraysClose(res.a, [1]);
+        test_util_1.expectArraysClose(res.c[0], [2]);
+    });
+    it('returns Tensor[]', function () {
+        var a = tf.tensor1d([1, 2, 3]);
+        var b = tf.tensor1d([0, -1, 1]);
+        expect(tf.memory().numTensors).toBe(2);
+        tf.tidy(function () {
+            var result = tf.tidy(function () {
+                tf.add(a, b);
+                return [tf.add(a, b), tf.sub(a, b)];
+            });
+            expect(tf.memory().numTensors).toBe(4);
+            test_util_1.expectArraysClose(result[0], [1, 1, 4]);
+            test_util_1.expectArraysClose(result[1], [1, 3, 2]);
+            expect(tf.memory().numTensors).toBe(4);
+        });
+        expect(tf.memory().numTensors).toBe(2);
+        a.dispose();
+        b.dispose();
+        expect(tf.memory().numTensors).toBe(0);
+    });
+    it('basic usage without return', function () {
+        var a = tf.tensor1d([1, 2, 3]);
+        var b = tf.tensor1d([0, 0, 0]);
+        expect(tf.memory().numTensors).toBe(2);
+        tf.tidy(function () {
+            b = tf.addStrict(a, b);
+            b = tf.addStrict(a, b);
+            b = tf.addStrict(a, b);
+            tf.add(a, b);
+        });
+        expect(tf.memory().numTensors).toBe(2);
+    });
+    it('nested usage', function () {
+        var a = tf.tensor1d([1, 2, 3]);
+        var b = tf.tensor1d([0, 0, 0]);
+        expect(tf.memory().numTensors).toBe(2);
+        tf.tidy(function () {
+            var result = tf.tidy(function () {
+                b = tf.addStrict(a, b);
+                b = tf.tidy(function () {
+                    b = tf.tidy(function () {
+                        return tf.addStrict(a, b);
+                    });
+                    expect(tf.memory().numTensors).toBe(4);
+                    tf.tidy(function () {
+                        tf.addStrict(a, b);
+                    });
+                    expect(tf.memory().numTensors).toBe(4);
+                    return tf.addStrict(a, b);
+                });
+                expect(tf.memory().numTensors).toBe(4);
+                return tf.addStrict(a, b);
+            });
+            expect(tf.memory().numTensors).toBe(3);
+            test_util_1.expectArraysClose(result, [4, 8, 12]);
+        });
+        expect(tf.memory().numTensors).toBe(2);
+    });
+    it('nested usage returns tensor created from outside scope', function () {
+        var x = tf.scalar(1);
+        tf.tidy(function () {
+            tf.tidy(function () {
+                return x;
+            });
+        });
+        expect(x.isDisposed).toBe(false);
+    });
+    it('nested usage with keep works', function () {
+        var b;
+        tf.tidy(function () {
+            var a = tf.scalar(1);
+            tf.tidy(function () {
+                b = tf.keep(a);
+            });
+        });
+        expect(b.isDisposed).toBe(false);
+    });
+    it('single argument', function () {
+        var hasRan = false;
+        tf.tidy(function () {
+            hasRan = true;
+        });
+        expect(hasRan).toBe(true);
+    });
+    it('single argument, but not a function throws error', function () {
+        expect(function () {
+            tf.tidy('asdf');
+        }).toThrowError();
+    });
+    it('2 arguments, first is string', function () {
+        var hasRan = false;
+        tf.tidy('name', function () {
+            hasRan = true;
+        });
+        expect(hasRan).toBe(true);
+    });
+    it('2 arguments, but first is not string throws error', function () {
+        expect(function () {
+            tf.tidy(4, function () { });
+        }).toThrowError();
+    });
+    it('2 arguments, but second is not a function throws error', function () {
+        expect(function () {
+            tf.tidy('name', 'another name');
+        }).toThrowError();
+    });
+    it('works with arbitrary depth of result', function () {
+        tf.tidy(function () {
+            var res = tf.tidy(function () {
+                return [tf.scalar(1), [[tf.scalar(2)]], { list: [tf.scalar(3)] }];
+            });
+            test_util_1.expectArraysEqual(res[0], [1]);
+            test_util_1.expectArraysEqual(res[1][0][0], [2]);
+            test_util_1.expectArraysEqual(res[2].list[0], [3]);
+            expect(tf.memory().numTensors).toBe(3);
+            return res[0];
+        });
+        expect(tf.memory().numTensors).toBe(1);
+    });
+});
 //# sourceMappingURL=tracking_test.js.map

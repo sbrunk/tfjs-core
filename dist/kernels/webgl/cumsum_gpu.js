@@ -7,14 +7,8 @@ var CumSumProgram = (function () {
         this.outputShape = shape;
         var rank = shape.length;
         var finalDim = shape[shape.length - 1];
-        var dtype = shader_compiler_1.getCoordsDataType(rank);
-        var outputCoords = getCoords(rank, 'coords');
-        var sourceCoords = getCoords(rank, 'adjustableCoords');
-        var finalCoord = getFinalCoord(rank, 'coords');
-        var finalAdjustableCoord = getFinalCoord(rank, 'adjustableCoords');
-        var indexAdjuster = reverse ? "return " + finalDim + " -i - 1;" : 'return i;';
         var comparator = reverse ? '<' : '>';
-        this.userCode = "\n      int getIndex(int i) {\n        " + indexAdjuster + "\n      }\n\n      void main() {\n        " + dtype + " coords = getOutputCoords();\n        " + dtype + " adjustableCoords = " + dtype + "(" + outputCoords + ");\n        int finalCoord = int(" + finalCoord + ");\n        float val = 0.0;\n        for (int i = " + finalDim + " - 1; i >= 0; i -= 1) {\n          int idx = getIndex(i);\n          if (idx " + comparator + " finalCoord) {\n            continue;\n          }\n          if (idx == finalCoord && " + exclusive + ") {\n            continue;\n          }\n          " + finalAdjustableCoord + " = idx;\n          val += getX(" + sourceCoords + ");\n        }\n        setOutput(val);\n      }\n    ";
+        this.userCode = "\n      int getIndex(int i) {\n        " + (reverse ? "return " + finalDim + " -i - 1;" : 'return i;') + "\n      }\n\n      void main() {\n        " + shader_compiler_1.getCoordsDataType(rank) + " coords = getOutputCoords();\n        int end = " + getFinalCoord(rank, 'coords') + ";\n        float val = 0.0;\n        for (int i = " + finalDim + " - 1; i >= 0; i -= 1) {\n          int idx = getIndex(i);\n          if (idx " + comparator + " end) {\n            continue;\n          }\n          if (idx == end && " + exclusive + ") {\n            continue;\n          }\n          " + getFinalCoord(rank, 'coords') + " = idx;\n          val += getX(" + getCoords(rank, 'coords') + ");\n        }\n        setOutput(val);\n      }\n    ";
     }
     return CumSumProgram;
 }());

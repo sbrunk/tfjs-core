@@ -1,10 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var TextureType;
-(function (TextureType) {
-    TextureType[TextureType["FLOAT"] = 0] = "FLOAT";
-    TextureType[TextureType["UNSIGNED_BYTE"] = 1] = "UNSIGNED_BYTE";
-})(TextureType = exports.TextureType || (exports.TextureType = {}));
+var TextureUsage;
+(function (TextureUsage) {
+    TextureUsage[TextureUsage["RENDER"] = 0] = "RENDER";
+    TextureUsage[TextureUsage["UPLOAD"] = 1] = "UPLOAD";
+    TextureUsage[TextureUsage["PIXELS"] = 2] = "PIXELS";
+    TextureUsage[TextureUsage["DOWNLOAD"] = 3] = "DOWNLOAD";
+})(TextureUsage = exports.TextureUsage || (exports.TextureUsage = {}));
+var PhysicalTextureType;
+(function (PhysicalTextureType) {
+    PhysicalTextureType[PhysicalTextureType["FLOAT16"] = 0] = "FLOAT16";
+    PhysicalTextureType[PhysicalTextureType["FLOAT32"] = 1] = "FLOAT32";
+    PhysicalTextureType[PhysicalTextureType["UNSIGNED_BYTE"] = 2] = "UNSIGNED_BYTE";
+})(PhysicalTextureType = exports.PhysicalTextureType || (exports.PhysicalTextureType = {}));
 function getUnpackedMatrixTextureShapeWidthHeight(rows, columns) {
     return [columns, rows];
 }
@@ -38,60 +46,6 @@ function encodeMatrixToUnpackedArray(matrix, unpackedArray, channelsPerTexture) 
     }
 }
 exports.encodeMatrixToUnpackedArray = encodeMatrixToUnpackedArray;
-exports.FLOAT_MAX = 20000;
-exports.FLOAT_MIN = -exports.FLOAT_MAX;
-var FLOAT_RANGE = (exports.FLOAT_MAX - exports.FLOAT_MIN) / 255;
-var FLOAT_DELTAS = [1, 1 / 255, 1 / (255 * 255), 1 / (255 * 255 * 255)];
-var FLOAT_POWERS = [1, 255, 255 * 255];
-exports.BYTE_NAN_VALUE = 0;
-function encodeFloatArray(floatArray) {
-    var uintArray = new Uint8Array(floatArray.length * 4);
-    var _loop_1 = function (i) {
-        var value = floatArray[i / 4];
-        if (isNaN(value)) {
-            uintArray[i] = exports.BYTE_NAN_VALUE;
-            uintArray[i + 1] = exports.BYTE_NAN_VALUE;
-            uintArray[i + 2] = exports.BYTE_NAN_VALUE;
-            uintArray[i + 3] = exports.BYTE_NAN_VALUE;
-            return "continue";
-        }
-        var normalizedValue = (value - exports.FLOAT_MIN) / FLOAT_RANGE;
-        var enc = FLOAT_POWERS.map(function (pow) { return pow * normalizedValue; });
-        var buckets = enc.map(function (value) { return Math.floor((value % 1) * 255); });
-        uintArray[i] = Math.floor(normalizedValue);
-        uintArray[i + 1] = buckets[0];
-        uintArray[i + 2] = buckets[1];
-        uintArray[i + 3] = buckets[2];
-    };
-    for (var i = 0; i < uintArray.length; i += 4) {
-        _loop_1(i);
-    }
-    return uintArray;
-}
-exports.encodeFloatArray = encodeFloatArray;
-function decodeToFloatArray(uintArray) {
-    var floatArray = new Float32Array(uintArray.length / 4);
-    var _loop_2 = function (i) {
-        if (uintArray[i] === exports.BYTE_NAN_VALUE &&
-            uintArray[i + 1] === exports.BYTE_NAN_VALUE &&
-            uintArray[i + 2] === exports.BYTE_NAN_VALUE &&
-            uintArray[i + 3] === exports.BYTE_NAN_VALUE) {
-            floatArray[i / 4] = NaN;
-            return "continue";
-        }
-        var dot = 0;
-        FLOAT_DELTAS.forEach(function (delta, j) {
-            dot += delta * uintArray[i + j];
-        });
-        var value = dot * FLOAT_RANGE + exports.FLOAT_MIN;
-        floatArray[i / 4] = value;
-    };
-    for (var i = 0; i < uintArray.length; i += 4) {
-        _loop_2(i);
-    }
-    return floatArray;
-}
-exports.decodeToFloatArray = decodeToFloatArray;
 function decodeMatrixFromUnpackedArray(unpackedArray, matrix, channelsPerTexture) {
     var requiredSize = getMatrixSizeFromUnpackedArraySize(unpackedArray.length, channelsPerTexture);
     if (matrix.length < requiredSize) {

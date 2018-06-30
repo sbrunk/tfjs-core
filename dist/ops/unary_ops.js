@@ -123,8 +123,8 @@ var UnaryOps = (function () {
             ("less than or equal to max (" + clipValueMax + ")."));
         var grad = function (dy) {
             return {
-                x: function () { return dy.where(x.greater(ops.scalar(clipValueMin))
-                    .logicalAnd(x.less(ops.scalar(clipValueMax))), ops_1.zerosLike(dy)); },
+                x: function () { return dy.where(x.greaterEqual(ops.scalar(clipValueMin))
+                    .logicalAnd(x.lessEqual(ops.scalar(clipValueMax))), ops_1.zerosLike(dy)); },
             };
         };
         return environment_1.ENV.engine.runKernel(function (backend) { return backend.clip(x, clipValueMin, clipValueMax); }, { x: x }, grad);

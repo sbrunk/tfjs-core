@@ -1,7 +1,14 @@
 import { DataType, DataTypeMap } from '../../types';
-export declare enum TextureType {
-    FLOAT = 0,
-    UNSIGNED_BYTE = 1,
+export declare enum TextureUsage {
+    RENDER = 0,
+    UPLOAD = 1,
+    PIXELS = 2,
+    DOWNLOAD = 3,
+}
+export declare enum PhysicalTextureType {
+    FLOAT16 = 0,
+    FLOAT32 = 1,
+    UNSIGNED_BYTE = 2,
 }
 export interface TextureData {
     texture: WebGLTexture;
@@ -9,7 +16,7 @@ export interface TextureData {
     texShape: [number, number];
     dtype: DataType;
     values: DataTypeMap[DataType];
-    texType: TextureType;
+    usage: TextureUsage;
 }
 export declare function getUnpackedMatrixTextureShapeWidthHeight(rows: number, columns: number): [number, number];
 export declare function getUnpackedArraySizeFromMatrixSize(matrixSize: number, channelsPerTexture: number): number;
@@ -17,11 +24,6 @@ export declare function getColorMatrixTextureShapeWidthHeight(rows: number, colu
 export declare function getMatrixSizeFromUnpackedArraySize(unpackedSize: number, channelsPerTexture: number): number;
 export declare type TypedArray = Float32Array | Uint8Array;
 export declare function encodeMatrixToUnpackedArray(matrix: TypedArray, unpackedArray: TypedArray, channelsPerTexture: number): void;
-export declare const FLOAT_MAX = 20000;
-export declare const FLOAT_MIN: number;
-export declare const BYTE_NAN_VALUE = 0;
-export declare function encodeFloatArray(floatArray: Float32Array): Uint8Array;
-export declare function decodeToFloatArray(uintArray: Uint8Array): Float32Array;
 export declare function decodeMatrixFromUnpackedArray(unpackedArray: Float32Array, matrix: Float32Array, channelsPerTexture: number): void;
 export declare function decodeMatrixFromUnpackedColorRGBAArray(unpackedArray: Float32Array, matrix: Float32Array, channels: number): void;
 export declare function getPackedMatrixTextureShapeWidthHeight(rows: number, columns: number): [number, number];

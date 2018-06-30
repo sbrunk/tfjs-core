@@ -27,7 +27,7 @@ var OptimizerConstructors = (function () {
     OptimizerConstructors.rmsprop = function (learningRate, decay, momentum, epsilon, centered) {
         if (decay === void 0) { decay = .9; }
         if (momentum === void 0) { momentum = 0.0; }
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         if (centered === void 0) { centered = false; }
         return new rmsprop_optimizer_1.RMSPropOptimizer(learningRate, decay, momentum, epsilon, centered);
     };
@@ -35,20 +35,20 @@ var OptimizerConstructors = (function () {
         if (learningRate === void 0) { learningRate = 0.001; }
         if (beta1 === void 0) { beta1 = 0.9; }
         if (beta2 === void 0) { beta2 = 0.999; }
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         return new adam_optimizer_1.AdamOptimizer(learningRate, beta1, beta2, epsilon);
     };
     OptimizerConstructors.adadelta = function (learningRate, rho, epsilon) {
         if (learningRate === void 0) { learningRate = .001; }
         if (rho === void 0) { rho = .95; }
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         return new adadelta_optimizer_1.AdadeltaOptimizer(learningRate, rho, epsilon);
     };
     OptimizerConstructors.adamax = function (learningRate, beta1, beta2, epsilon, decay) {
         if (learningRate === void 0) { learningRate = 0.002; }
         if (beta1 === void 0) { beta1 = 0.9; }
         if (beta2 === void 0) { beta2 = 0.999; }
-        if (epsilon === void 0) { epsilon = 1e-8; }
+        if (epsilon === void 0) { epsilon = null; }
         if (decay === void 0) { decay = 0.0; }
         return new adamax_optimizer_1.AdamaxOptimizer(learningRate, beta1, beta2, epsilon, decay);
     };
