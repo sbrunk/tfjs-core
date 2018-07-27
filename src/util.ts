@@ -14,31 +14,8 @@
  * limitations under the License.
  * =============================================================================
  */
-import {Tensor} from './tensor';
-// tslint:disable-next-line:max-line-length
-import {DataType, DataTypeMap, FlatVector, NamedTensorMap, RecursiveArray, RegularArray, TensorContainer, TensorContainerArray, TypedArray} from './types';
 
-function assertArgumentIsTensor(
-    x: Tensor, argName: string, functionName: string) {
-  assert(
-      x instanceof Tensor,
-      `Argument '${argName}' passed to '${functionName}' must be a Tensor, ` +
-          `but got ${typeof x}.`);
-}
-
-export function assertArgumentsAreTensors(
-    args: {[argName: string]: Tensor|Tensor[]}, functionName: string) {
-  for (const argName in args) {
-    const arg = args[argName];
-    if (Array.isArray(arg)) {
-      arg.forEach((t, i) => {
-        assertArgumentIsTensor(t, `${argName}[${i}]`, functionName);
-      });
-    } else {
-      assertArgumentIsTensor(arg, argName, functionName);
-    }
-  }
-}
+import {ArrayData, DataType, DataTypeMap, FlatVector, RecursiveArray, RegularArray, TensorLike, TypedArray} from './types';
 
 /** Shuffles the array using Fisher-Yates algorithm. */
 // tslint:disable-next-line:no-any
@@ -80,9 +57,9 @@ export function distSquared(a: FlatVector, b: FlatVector): number {
   return result;
 }
 
-export function assert(expr: boolean, msg: string) {
+export function assert(expr: boolean, msg: string|(() => string)) {
   if (!expr) {
-    throw new Error(msg);
+    throw new Error(typeof msg === 'string' ? msg : msg());
   }
 }
 
@@ -93,17 +70,16 @@ export function assertShapesMatch(
       errorMessagePrefix + ` Shapes ${shapeA} and ${shapeB} must match`);
 }
 
-export function assertTypesMatch(a: Tensor, b: Tensor): void {
+export function assertNonNull(a: TensorLike): void {
   assert(
-      a.dtype === b.dtype,
-      ` The dtypes of the first(${a.dtype}) and` +
-          ` second(${b.dtype}) input must match`);
+      a != null,
+      `The input to the tensor constructor must be a non-null value.`);
 }
 
 // NOTE: We explicitly type out what T extends instead of any so that
 // util.flatten on a nested array of number doesn't try to infer T as a
 // number[][], causing us to explicitly type util.flatten<number>().
-export function flatten<T extends number|boolean|Tensor|Promise<number>>(
+export function flatten<T extends number|boolean|Promise<number>>(
     arr: T|RecursiveArray<T>, ret: T[] = []): T[] {
   if (Array.isArray(arr)) {
     for (let i = 0; i < arr.length; ++i) {
@@ -117,6 +93,8 @@ export function flatten<T extends number|boolean|Tensor|Promise<number>>(
 
 export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
                            RegularArray<boolean>): number[] {
+  let firstElem: typeof val = val;
+
   if (isTypedArray(val)) {
     return [(val as TypedArray).length];
   }
@@ -124,11 +102,40 @@ export function inferShape(val: TypedArray|number|boolean|RegularArray<number>|
     return [];  // Scalar.
   }
   const shape: number[] = [];
-  while (val instanceof Array) {
-    shape.push(val.length);
-    val = val[0];
+
+  while (firstElem instanceof Array) {
+    shape.push(firstElem.length);
+    firstElem = firstElem[0];
+  }
+  if (val instanceof Array) {
+    deepAssertShapeConsistency(val, shape, []);
   }
   return shape;
+}
+
+function deepAssertShapeConsistency(
+    val: number|boolean|RegularArray<number>|RegularArray<boolean>,
+    shape: number[], indices?: number[]) {
+  indices = indices || [];
+  if (!(val instanceof Array)) {
+    assert(
+        shape.length === 0,
+        () => `Element arr[${indices.join('][')}] is a primitive, ` +
+            `but should be an array of ${shape[0]} elements`);
+    return;
+  }
+  assert(
+      shape.length > 0,
+      () => `Element arr[${indices.join('][')}] should be a primitive, ` +
+          `but is an array of ${val.length} elements`);
+  assert(
+      val.length === shape[0],
+      () => `Element arr[${indices.join('][')}] should have ${shape[0]} ` +
+          `elements, but has ${val.length} elements`);
+  const subShape = shape.slice(1);
+  for (let i = 0; i < val.length; ++i) {
+    deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
+  }
 }
 
 export function sizeFromShape(shape: number[]): number {
@@ -231,20 +238,6 @@ export function repeatedTry(
   });
 }
 
-export function getQueryParams(queryString: string): {[key: string]: string} {
-  const params = {};
-  queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, (s, ...t) => {
-    decodeParam(params, t[0], t[1]);
-    return t.join('=');
-  });
-  return params;
-}
-
-function decodeParam(
-    params: {[key: string]: string}, name: string, value?: string) {
-  params[decodeURIComponent(name)] = decodeURIComponent(value || '');
-}
-
 /**
  * Given the full size of the array and a shape that may contain -1 as the
  * implicit dimension, returns the inferred shape where -1 is replaced.
@@ -335,19 +328,10 @@ export function getTypedArrayFromDType<D extends DataType>(
   return values;
 }
 
-export function isTensorInList(tensor: Tensor, tensorList: Tensor[]): boolean {
-  for (let i = 0; i < tensorList.length; i++) {
-    if (tensorList[i].id === tensor.id) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export function checkForNaN<D extends DataType>(
+export function checkComputationForNaN<D extends DataType>(
     vals: DataTypeMap[D], dtype: D, name: string): void {
   if (dtype !== 'float32') {
-    // NaN is a floating point concept.
+    // Only floating point computations will generate NaN values
     return;
   }
   for (let i = 0; i < vals.length; i++) {
@@ -357,31 +341,18 @@ export function checkForNaN<D extends DataType>(
   }
 }
 
-export function flattenNameArrayMap(
-    nameArrayMap: Tensor|NamedTensorMap, keys?: string[]): Tensor[] {
-  const xs: Tensor[] = [];
-  if (nameArrayMap instanceof Tensor) {
-    xs.push(nameArrayMap);
-  } else {
-    const xMap = nameArrayMap as {[xName: string]: Tensor};
-    for (let i = 0; i < keys.length; i++) {
-      xs.push(xMap[keys[i]]);
+export function checkConversionForNaN<D extends DataType>(
+    vals: DataTypeMap[D]|number[], dtype: D): void {
+  if (dtype === 'float32') {
+    // NaN is valid for floating point conversions
+    return;
+  }
+
+  for (let i = 0; i < vals.length; i++) {
+    if (isNaN(vals[i])) {
+      throw Error(`NaN is not a valid value for dtype: '${dtype}'.`);
     }
   }
-  return xs;
-}
-
-export function unflattenToNameArrayMap(
-    keys: string[], flatArrays: Tensor[]): NamedTensorMap {
-  if (keys.length !== flatArrays.length) {
-    throw new Error(
-        `Cannot unflatten Tensor[], keys and arrays are not of same length.`);
-  }
-  const result: NamedTensorMap = {};
-  for (let i = 0; i < keys.length; i++) {
-    result[keys[i]] = flatArrays[i];
-  }
-  return result;
 }
 
 /**
@@ -401,11 +372,15 @@ export function hasEncodingLoss(oldType: DataType, newType: DataType): boolean {
   return true;
 }
 
-export function copyTypedArray<D extends DataType>(
-    array: DataTypeMap[D]|number[]|boolean[], dtype: D): DataTypeMap[D] {
+function copyTypedArray<D extends DataType>(
+    array: DataTypeMap[D]|number[]|boolean[], dtype: D,
+    debugMode: boolean): DataTypeMap[D] {
   if (dtype == null || dtype === 'float32') {
     return new Float32Array(array as number[]);
   } else if (dtype === 'int32') {
+    if (debugMode) {
+      checkConversionForNaN(array as number[], dtype);
+    }
     return new Int32Array(array as number[]);
   } else if (dtype === 'bool') {
     const bool = new Uint8Array(array.length);
@@ -440,48 +415,6 @@ export function isFunction(f: Function) {
   return !!(f && f.constructor && f.call && f.apply);
 }
 
-/**
- * Extracts any `Tensor`s found within the provided object.
- *
- * @param container an object that may be a `Tensor` or may directly contain
- *   `Tensor`s, such as a `Tensor[]` or `{key: Tensor, ...}`.  In general it
- *   is safe to pass any object here, except that `Promise`s are not
- *   supported.
- * @returns An array of `Tensors` found within the passed object.  If the
- *   argument is simply a `Tensor', a list containing that `Tensor` is
- *   returned. If the object is not a `Tensor` or does not
- *   contain `Tensors`, an empty list is returned.
- */
-export function getTensorsInContainer(result: TensorContainer): Tensor[] {
-  const list: Tensor[] = [];
-  const seen = new Set<{}|void>();
-  walkTensorContainer(result, list, seen);
-  return list;
-}
-
-function walkTensorContainer(
-    container: TensorContainer, list: Tensor[], seen: Set<{}|void>): void {
-  if (container == null) {
-    return;
-  }
-  if (container instanceof Tensor) {
-    list.push(container);
-    return;
-  }
-  if (!isIterable(container)) {
-    return;
-  }
-  // Iteration over keys works also for arrays.
-  const iterable = container as TensorContainerArray;
-  for (const k in iterable) {
-    const val = iterable[k];
-    if (!seen.has(val)) {
-      seen.add(val);
-      walkTensorContainer(val, list, seen);
-    }
-  }
-}
-
 export function nearestDivisor(size: number, start: number): number {
   for (let i = start; i < size; ++i) {
     if (size % i === 0) {
@@ -491,7 +424,75 @@ export function nearestDivisor(size: number, start: number): number {
   return size;
 }
 
-// tslint:disable-next-line:no-any
-function isIterable(obj: any): boolean {
-  return Array.isArray(obj) || typeof obj === 'object';
+export function computeStrides(shape: number[]): number[] {
+  const rank = shape.length;
+  if (rank < 2) {
+    return [];
+  }
+
+  // Last dimension has implicit stride of 1, thus having D-1 (instead of D)
+  // strides.
+  const strides = new Array(rank - 1);
+  strides[rank - 2] = shape[rank - 1];
+  for (let i = rank - 3; i >= 0; --i) {
+    strides[i] = strides[i + 1] * shape[i + 1];
+  }
+  return strides;
+}
+
+export function toTypedArray<D extends DataType>(
+    a: ArrayData<D>, dtype: D, debugMode: boolean): DataTypeMap[D] {
+  if (noConversionNeeded(a, dtype)) {
+    return a as DataTypeMap[D];
+  }
+  if (Array.isArray(a)) {
+    a = flatten(a as number[]);
+  }
+  return copyTypedArray(a, dtype, debugMode);
+}
+
+function noConversionNeeded<D extends DataType>(
+    a: ArrayData<D>, dtype: D): boolean {
+  return (a instanceof Float32Array && dtype === 'float32') ||
+      (a instanceof Int32Array && dtype === 'int32') ||
+      (a instanceof Uint8Array && dtype === 'bool');
+}
+
+export function makeOnesTypedArray<D extends DataType>(
+    size: number, dtype: D): DataTypeMap[D] {
+  const array = makeZerosTypedArray(size, dtype);
+  for (let i = 0; i < array.length; i++) {
+    array[i] = 1;
+  }
+  return array;
+}
+
+export function makeZerosTypedArray<D extends DataType>(
+    size: number, dtype: D): DataTypeMap[D] {
+  if (dtype == null || dtype === 'float32') {
+    return new Float32Array(size);
+  } else if (dtype === 'int32') {
+    return new Int32Array(size);
+  } else if (dtype === 'bool') {
+    return new Uint8Array(size);
+  } else {
+    throw new Error(`Unknown data type ${dtype}`);
+  }
+}
+
+/**
+ * Returns the current high-resolution real time in milliseconds. It is
+ * relative to an arbitrary time in the past.
+ */
+export function now(): number {
+  if (typeof performance !== 'undefined') {
+    return performance.now();
+  } else if (typeof process !== 'undefined') {
+    const time = process.hrtime();
+    return time[0] * 1000 + time[1] / 1000000;
+  } else {
+    throw new Error(
+        'Can not measure time in this environment. You should run tf.js ' +
+        'in the browser or in Node.js');
+  }
 }

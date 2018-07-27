@@ -18,11 +18,9 @@
 import {ENV} from '../environment';
 import {keep, tidy} from '../globals';
 import {scalar} from '../ops/ops';
-// tslint:disable-next-line:max-line-length
 import {ConfigDict, Serializable, SerializableConstructor, SerializationMap} from '../serialization';
 import {Scalar} from '../tensor';
-import {NamedTensorMap} from '../types';
-
+import {NamedTensorMap} from '../tensor_types';
 import {Optimizer} from './optimizer';
 
 /** @doclink Optimizer */

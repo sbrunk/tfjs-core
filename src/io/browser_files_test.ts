@@ -21,9 +21,7 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-import {CPU_ENVS} from '../test_util';
-
-// tslint:disable-next-line:max-line-length
+import {BROWSER_ENVS} from '../test_util';
 import {browserDownloads, BrowserDownloads, browserDownloadsRouter} from './browser_files';
 import {WeightsManifestConfig, WeightsManifestEntry} from './types';
 
@@ -78,7 +76,7 @@ const artifacts1: tf.io.ModelArtifacts = {
   weightData: weightData1,
 };
 
-describeWithFlags('browserDownloads', CPU_ENVS, () => {
+describeWithFlags('browserDownloads', BROWSER_ENVS, () => {
   class FakeHTMLAnchorElement {
     download: string;
     href: string;
@@ -314,7 +312,7 @@ describeWithFlags('browserDownloads', CPU_ENVS, () => {
   });
 });
 
-describeWithFlags('browserFiles', CPU_ENVS, () => {
+describeWithFlags('browserFiles', BROWSER_ENVS, () => {
   const weightsBlob =
       new Blob([weightData1], {type: 'application/octet-stream'});
   const weightsFile = new File(

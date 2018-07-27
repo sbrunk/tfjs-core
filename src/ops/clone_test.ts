@@ -16,9 +16,8 @@
  */
 
 import * as tf from '../index';
-// tslint:disable-next-line:max-line-length
-import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('clone', ALL_ENVS, () => {
   it('returns a tensor with the same shape and value', () => {
@@ -26,5 +25,12 @@ describeWithFlags('clone', ALL_ENVS, () => {
     const aPrime = tf.clone(a);
     expect(aPrime.shape).toEqual(a.shape);
     expectArraysClose(aPrime, a);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const res = tf.clone([[1, 2, 3], [4, 5, 6]]);
+    expect(res.dtype).toBe('float32');
+    expect(res.shape).toEqual([2, 3]);
+    expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
   });
 });

@@ -17,7 +17,6 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('transpose', ALL_ENVS, () => {
@@ -151,5 +150,13 @@ describeWithFlags('transpose', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.transpose({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'transpose' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const t = [[1, 11, 2, 22], [3, 33, 4, 44]];
+    const res = tf.transpose(t, [1, 0]);
+
+    expect(res.shape).toEqual([4, 2]);
+    expectArraysClose(res, [1, 3, 11, 33, 2, 4, 22, 44]);
   });
 });

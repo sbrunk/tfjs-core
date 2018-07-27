@@ -15,12 +15,9 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
 import * as tf from '../index';
-
-import {ALL_ENVS, expectArraysClose} from '../test_util';
 import {describeWithFlags} from '../jasmine_util';
-// tslint:enable:max-line-length
+import {ALL_ENVS, expectArraysClose} from '../test_util';
 
 describeWithFlags('movingAverage', ALL_ENVS, () => {
   // Use the following tensorflow to generate reference values for
@@ -154,5 +151,14 @@ describeWithFlags('movingAverage', ALL_ENVS, () => {
     expect(() => tf.movingAverage(v, {} as tf.Tensor, 1))
         .toThrowError(
             /Argument 'x' passed to 'movingAverage' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const v0 = [[0, 0], [0, 0]];  // 2x2
+    const x = [[1, 2], [3, 4]];   // 2x2
+    const decay = 0.6;
+
+    const v1 = tf.movingAverage(v0, x, decay, 1);
+    expectArraysClose(v1, tf.tensor2d([[1, 2], [3, 4]], [2, 2]));
   });
 });

@@ -11,3 +11,4 @@ yarn-error.log
 yalc.lock
 .rpt2_cache/
 package/
+integration_tests/benchmarks/bundle.js

@@ -17,7 +17,6 @@
 
 import * as tf from '../index';
 import {describeWithFlags} from '../jasmine_util';
-// tslint:disable-next-line:max-line-length
 import {ALL_ENVS, expectArraysClose, expectArraysEqual, expectNumbersClose} from '../test_util';
 
 import * as reduce_util from './reduce_util';
@@ -80,6 +79,10 @@ describeWithFlags('Reduction: min', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.min({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'min' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    expectNumbersClose(tf.min([3, -1, 0, 100, -7, 2]).get(), -7);
   });
 });
 
@@ -158,6 +161,11 @@ describeWithFlags('Reduction: max', ALL_ENVS, () => {
     expect(() => tf.max({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'max' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.max([3, -1, 0, 100, -7, 2]);
+    expectNumbersClose(r.get(), 100);
+  });
 });
 
 describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
@@ -226,6 +234,12 @@ describeWithFlags('Reduction: argmax', ALL_ENVS, () => {
     expect(() => tf.argMax({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'argMax' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.argMax([1, 0, 3, 2]);
+    expect(result.dtype).toBe('int32');
+    expect(result.get()).toBe(2);
+  });
 });
 
 describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
@@ -288,6 +302,11 @@ describeWithFlags('Reduction: argmin', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.argMin({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'argMin' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.argMin([1, 0, 3, 2]);
+    expect(result.get()).toBe(1);
   });
 });
 
@@ -388,6 +407,12 @@ describeWithFlags('Reduction: logSumExp', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.logSumExp({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'logSumExp' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.logSumExp([1, 2, -3]);
+    expectNumbersClose(
+        result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
   });
 });
 
@@ -518,6 +543,11 @@ describeWithFlags('Reduction: sum', ALL_ENVS, () => {
     expect(() => tf.sum({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'sum' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const result = tf.sum([[1, 2], [3, 0], [0, 1]]);
+    expectNumbersClose(result.get(), 7);
+  });
 });
 
 describeWithFlags('Reduction: mean', ALL_ENVS, () => {
@@ -640,6 +670,13 @@ describeWithFlags('Reduction: mean', ALL_ENVS, () => {
     expect(() => tf.mean({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'mean' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const r = tf.mean([[1, 2, 3], [0, 0, 1]]);
+
+    expect(r.dtype).toBe('float32');
+    expectNumbersClose(r.get(), 7 / 6);
+  });
 });
 
 describeWithFlags('Reduction: moments', ALL_ENVS, () => {
@@ -758,6 +795,15 @@ describeWithFlags('Reduction: moments', ALL_ENVS, () => {
   it('throws when passed a non-tensor', () => {
     expect(() => tf.moments({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'moments' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const {mean, variance} = tf.moments([1, 2, 3, 0, 0, 1]);
+
+    expect(mean.dtype).toBe('float32');
+    expect(variance.dtype).toBe('float32');
+    expectNumbersClose(mean.get(), 7 / 6);
+    expectNumbersClose(variance.get(), 1.1389);
   });
 });
 
@@ -1017,6 +1063,13 @@ describeWithFlags('Reduction: norm', ALL_ENVS, () => {
     expect(() => tf.norm({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
   });
+
+  it('accepts a tensor-like object', () => {
+    const norm = tf.norm([1, -2, 3, -4], 1);
+
+    expect(norm.dtype).toBe('float32');
+    expectNumbersClose(norm.get(), 10);
+  });
 });
 
 describeWithFlags('Reduction: all', ALL_ENVS, () => {
@@ -1087,11 +1140,98 @@ describeWithFlags('Reduction: all', ALL_ENVS, () => {
 
   it('throws when dtype is not boolean', () => {
     const a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
-    expect(() => tf.all(a)).toThrowError(/Error Array must be of type bool/);
+    expect(() => tf.all(a)).toThrowError(/Error Tensor must be of type bool/);
   });
 
   it('throws when passed a non-tensor', () => {
     expect(() => tf.all({} as tf.Tensor))
         .toThrowError(/Argument 'x' passed to 'all' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [0, 0, 0];
+    expectNumbersClose(tf.all(a).get(), 0);
+  });
+});
+
+describeWithFlags('Reduction: any', ALL_ENVS, () => {
+  it('Tensor1D', () => {
+    let a = tf.tensor1d([0, 0, 0], 'bool');
+    expectNumbersClose(tf.any(a).get(), 0);
+
+    a = tf.tensor1d([1, 0, 1], 'bool');
+    expectNumbersClose(tf.any(a).get(), 1);
+
+    a = tf.tensor1d([1, 1, 1], 'bool');
+    expectNumbersClose(tf.any(a).get(), 1);
+  });
+
+  it('ignores NaNs', () => {
+    const a = tf.tensor1d([1, NaN, 0], 'bool');
+    expect(tf.any(a).get()).toEqual(1);
+  });
+
+  it('2D', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+    expectNumbersClose(tf.any(a).get(), 1);
+  });
+
+  it('2D axis=[0,1]', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    expectNumbersClose(tf.any(a, [0, 1]).get(), 1);
+  });
+
+  it('2D, axis=0', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+    let r = tf.any(a, 0);
+
+    expect(r.shape).toEqual([2]);
+    expectArraysClose(r, [1, 1]);
+
+    r = tf.any(a, 1);
+
+    expect(r.shape).toEqual([2]);
+    expectArraysClose(r, [1, 0]);
+  });
+
+  it('2D, axis=0, keepDims', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = a.any(0, true /* keepDims */);
+
+    expect(r.shape).toEqual([1, 3]);
+    expectArraysClose(r, [1, 1, 0]);
+  });
+
+  it('2D, axis=1 provided as a number', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.any(a, 1);
+    expectArraysClose(r, [1, 1]);
+  });
+
+  it('2D, axis = -1 provided as a number', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.any(a, -1);
+    expectArraysClose(r, [1, 1]);
+  });
+
+  it('2D, axis=[1]', () => {
+    const a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+    const r = tf.any(a, [1]);
+    expectArraysClose(r, [1, 1]);
+  });
+
+  it('throws when dtype is not boolean', () => {
+    const a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
+    expect(() => tf.any(a)).toThrowError(/Error Tensor must be of type bool/);
+  });
+
+  it('throws when passed a non-tensor', () => {
+    expect(() => tf.any({} as tf.Tensor))
+        .toThrowError(/Argument 'x' passed to 'any' must be a Tensor/);
+  });
+
+  it('accepts a tensor-like object', () => {
+    const a = [0, 0, 0];
+    expectNumbersClose(tf.any(a).get(), 0);
   });
 });
