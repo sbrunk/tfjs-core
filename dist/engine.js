@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -35,17 +35,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var environment_1 = require("./environment");
-var globals_1 = require("./globals");
-var ops = require("./ops/ops");
 var profiler_1 = require("./profiler");
 var tape_1 = require("./tape");
 var tensor_1 = require("./tensor");
+var tensor_util_1 = require("./tensor_util");
 var util = require("./util");
+var util_1 = require("./util");
 var Engine = (function () {
-    function Engine(backend, safeMode) {
+    function Engine(backend, safeMode, debugMode) {
         this.backend = backend;
         this.safeMode = safeMode;
+        this.debugMode = debugMode;
         this.registeredVariables = {};
         this.refCounter = new WeakMap();
         this.nextTapeNodeId = 0;
@@ -55,10 +55,52 @@ var Engine = (function () {
         this.gradientScopeCount = 0;
         this.customGradientDepth = 0;
         this.keepTensors = new Set();
-        this.activeScope = { track: [] };
+        this.activeScope = { track: [], name: 'default scope' };
         this.scopeStack = [this.activeScope];
         this.profiler = new profiler_1.Profiler(backend);
     }
+    Engine.prototype.tidy = function (nameOrFn, fn, gradMode) {
+        var _this = this;
+        if (gradMode === void 0) { gradMode = false; }
+        var name = null;
+        if (fn == null) {
+            if (typeof nameOrFn !== 'function') {
+                throw new Error('Please provide a function to tidy()');
+            }
+            fn = nameOrFn;
+        }
+        else {
+            if (typeof nameOrFn !== 'string' && !(nameOrFn instanceof String)) {
+                throw new Error('When calling with two arguments, the first argument ' +
+                    'to tidy() must be a string');
+            }
+            if (typeof fn !== 'function') {
+                throw new Error('When calling with two arguments, the 2nd argument ' +
+                    'to tidy() must be a function');
+            }
+            name = nameOrFn;
+        }
+        var result;
+        return this.scopedRun(function () { return _this.startScope(name, gradMode); }, function () { return _this.endScope(result, gradMode); }, function () {
+            result = fn();
+            if (result instanceof Promise) {
+                console.error('Cannot return a Promise inside of tidy.');
+            }
+            return result;
+        });
+    };
+    Engine.prototype.scopedRun = function (start, end, f) {
+        start();
+        try {
+            var res = f();
+            end();
+            return res;
+        }
+        catch (ex) {
+            end();
+            throw ex;
+        }
+    };
     Engine.prototype.runKernel = function (forwardFunc, inputs, backwardsFunc) {
         var _this = this;
         var result;
@@ -68,23 +110,24 @@ var Engine = (function () {
             return x;
         };
         var scopeName = this.activeScope.name;
-        this.customGradientDepth++;
-        if (!environment_1.ENV.get('DEBUG')) {
-            result = forwardFunc(this.backend, saveFunc);
-        }
-        else {
-            result = this.profiler.profileKernel(scopeName, function () { return forwardFunc(_this.backend, saveFunc); });
-        }
-        this.customGradientDepth--;
+        this.scopedRun(function () { return _this.customGradientDepth++; }, function () { return _this.customGradientDepth--; }, function () {
+            if (!_this.debugMode()) {
+                result = forwardFunc(_this.backend, saveFunc);
+            }
+            else {
+                result = _this.profiler.profileKernel(scopeName, function () { return forwardFunc(_this.backend, saveFunc); });
+            }
+        });
         if (this.shouldRecord()) {
             var tapeNode = {
                 id: this.nextTapeNodeId++,
                 name: scopeName,
                 inputs: inputs,
-                output: result,
+                output: Array.isArray(result) ? result[0] : result
             };
             if (backwardsFunc != null) {
-                tapeNode.gradient = function (dy) { return backwardsFunc(dy, saved); };
+                tapeNode.gradient =
+                    (function (dy) { return backwardsFunc(dy, saved); });
             }
             this.activeTape.push(tapeNode);
         }
@@ -170,7 +213,7 @@ var Engine = (function () {
         this.activeTape.push(tapeNode);
     };
     Engine.prototype.keep = function (result) {
-        if (this.scopeStack.length === 1 && environment_1.ENV.engine.safeMode) {
+        if (this.scopeStack.length === 1 && this.safeMode) {
             throw new Error('Safe mode is ON. Enclose all tensor operations inside tf.tidy(): ' +
                 'tf.tidy(() => {...}) to avoid memory leaks.');
         }
@@ -185,7 +228,7 @@ var Engine = (function () {
         if (gradientsMode) {
             this.gradientScopeCount++;
         }
-        var scopeInfo = { track: [] };
+        var scopeInfo = { track: [], name: 'unnamed scope' };
         if (name) {
             scopeInfo.name = name;
         }
@@ -202,7 +245,7 @@ var Engine = (function () {
             }
         }
         var tensorsToKeep = new Set(this.keepTensors);
-        var tensorsToTrackInParent = util.getTensorsInContainer(result);
+        var tensorsToTrackInParent = tensor_util_1.getTensorsInContainer(result);
         tensorsToTrackInParent.forEach(function (tensor) { return tensorsToKeep.add(tensor.id); });
         for (var i = 0; i < this.activeScope.track.length; i++) {
             var tensor = this.activeScope.track[i];
@@ -218,11 +261,11 @@ var Engine = (function () {
         }
         var oldScope = this.scopeStack.pop();
         this.activeScope = this.scopeStack.length === 0 ?
-            { track: [] } :
+            { track: [], name: 'default scope' } :
             this.scopeStack[this.scopeStack.length - 1];
         tensorsToTrackInParent.forEach(function (tensor) {
             if (!_this.keepTensors.has(tensor.id) &&
-                util.isTensorInList(tensor, oldScope.track)) {
+                tensor_util_1.isTensorInList(tensor, oldScope.track)) {
                 _this.track(tensor);
             }
         });
@@ -231,7 +274,7 @@ var Engine = (function () {
         var _this = this;
         if (allowNoGradients === void 0) { allowNoGradients = false; }
         util.assert(xs.length > 0, 'gradients() received an empty list of xs.');
-        return globals_1.tidy('gradients', function () {
+        return this.tidy('gradients', function () {
             var y = f();
             util.assert(y instanceof tensor_1.Tensor, 'The result y returned by f() must be a tensor.');
             var filteredTape = tape_1.getFilteredNodesXToY(_this.activeTape, xs, y);
@@ -241,7 +284,7 @@ var Engine = (function () {
                     'to y.');
             }
             var accumulatedGradientMap = {};
-            accumulatedGradientMap[y.id] = (dy == null) ? ops.ones(y.shape) : dy;
+            accumulatedGradientMap[y.id] = (dy == null) ? ones(y.shape) : dy;
             tape_1.backpropagateGradients(accumulatedGradientMap, filteredTape);
             var grads = xs.map(function (x) { return accumulatedGradientMap[x.id]; });
             return { value: y, grads: grads };
@@ -256,19 +299,20 @@ var Engine = (function () {
                 inputs[_i] = arguments[_i];
             }
             util.assert(inputs.every(function (t) { return t instanceof tensor_1.Tensor; }), 'The args passed in customGrad(f)(x1, x2,...) must all be tensors');
-            _this.customGradientDepth++;
             var gradientsFunc;
-            var gradientsMode = true;
-            var result = globals_1.tidy(f.name, function () {
-                var _a = f.apply(void 0, inputs), value = _a.value, gradFunc = _a.gradFunc;
-                util.assert(value instanceof tensor_1.Tensor, 'The function f passed in customGrad(f) must return an object ' +
-                    'where `obj.value` is a tensor');
-                util.assert(util.isFunction(gradFunc), 'The function f passed in customGrad(f) must return an object ' +
-                    'where `obj.gradFunc` is a function.');
-                gradientsFunc = gradFunc;
-                return value;
-            }, gradientsMode);
-            _this.customGradientDepth--;
+            var result;
+            _this.scopedRun(function () { return _this.customGradientDepth++; }, function () { return _this.customGradientDepth--; }, function () {
+                var gradientsMode = true;
+                result = _this.tidy(f.name, function () {
+                    var _a = f.apply(void 0, inputs), value = _a.value, gradFunc = _a.gradFunc;
+                    util.assert(value instanceof tensor_1.Tensor, 'The function f passed in customGrad(f) must return an ' +
+                        'object where `obj.value` is a tensor');
+                    util.assert(util.isFunction(gradFunc), 'The function f passed in customGrad(f) must return an ' +
+                        'object where `obj.gradFunc` is a function.');
+                    gradientsFunc = gradFunc;
+                    return value;
+                }, gradientsMode);
+            });
             if (_this.shouldRecord()) {
                 var gradFunc = function (dy) {
                     var res = gradientsFunc(dy);
@@ -304,11 +348,11 @@ var Engine = (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        start = performance.now();
+                        start = util_1.now();
                         return [4, this.backend.time(query)];
                     case 1:
                         timingInfo = _a.sent();
-                        timingInfo.wallMs = performance.now() - start;
+                        timingInfo.wallMs = util_1.now() - start;
                         return [2, timingInfo];
                 }
             });
@@ -325,4 +369,8 @@ var Engine = (function () {
     return Engine;
 }());
 exports.Engine = Engine;
+function ones(shape) {
+    var values = util_1.makeOnesTypedArray(util_1.sizeFromShape(shape), 'float32');
+    return tensor_1.Tensor.make(shape, { values: values });
+}
 //# sourceMappingURL=engine.js.map

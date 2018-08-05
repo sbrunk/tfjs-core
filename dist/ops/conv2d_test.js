@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('conv2d', test_util_1.ALL_ENVS, function () {
     it('x=[2,2,1] f=[1,1,1,2] s=1 d=1 p=0', function () {
         var inputDepth = 1;
@@ -179,6 +179,14 @@ jasmine_util_1.describeWithFlags('conv2d', test_util_1.ALL_ENVS, function () {
         var x = tf.tensor3d([1, 2, 3, 4], inputShape);
         expect(function () { return tf.conv2d(x, {}, stride, pad); })
             .toThrowError(/Argument 'filter' passed to 'conv2d' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var pad = 0;
+        var stride = 1;
+        var x = [[[1], [2]], [[3], [4]]];
+        var w = [[[[2]]]];
+        var result = tf.conv2d(x, w, stride, pad);
+        test_util_1.expectArraysClose(result, [2, 4, 6, 8]);
     });
 });
 //# sourceMappingURL=conv2d_test.js.map

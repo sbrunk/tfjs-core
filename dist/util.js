@@ -1,27 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var tensor_1 = require("./tensor");
-function assertArgumentIsTensor(x, argName, functionName) {
-    assert(x instanceof tensor_1.Tensor, "Argument '" + argName + "' passed to '" + functionName + "' must be a Tensor, " +
-        ("but got " + typeof x + "."));
-}
-function assertArgumentsAreTensors(args, functionName) {
-    var _loop_1 = function (argName) {
-        var arg = args[argName];
-        if (Array.isArray(arg)) {
-            arg.forEach(function (t, i) {
-                assertArgumentIsTensor(t, argName + "[" + i + "]", functionName);
-            });
-        }
-        else {
-            assertArgumentIsTensor(arg, argName, functionName);
-        }
-    };
-    for (var argName in args) {
-        _loop_1(argName);
-    }
-}
-exports.assertArgumentsAreTensors = assertArgumentsAreTensors;
 function shuffle(array) {
     var counter = array.length;
     var temp = 0;
@@ -54,7 +32,7 @@ function distSquared(a, b) {
 exports.distSquared = distSquared;
 function assert(expr, msg) {
     if (!expr) {
-        throw new Error(msg);
+        throw new Error(typeof msg === 'string' ? msg : msg());
     }
 }
 exports.assert = assert;
@@ -63,11 +41,10 @@ function assertShapesMatch(shapeA, shapeB, errorMessagePrefix) {
     assert(arraysEqual(shapeA, shapeB), errorMessagePrefix + (" Shapes " + shapeA + " and " + shapeB + " must match"));
 }
 exports.assertShapesMatch = assertShapesMatch;
-function assertTypesMatch(a, b) {
-    assert(a.dtype === b.dtype, " The dtypes of the first(" + a.dtype + ") and" +
-        (" second(" + b.dtype + ") input must match"));
+function assertNonNull(a) {
+    assert(a != null, "The input to the tensor constructor must be a non-null value.");
 }
-exports.assertTypesMatch = assertTypesMatch;
+exports.assertNonNull = assertNonNull;
 function flatten(arr, ret) {
     if (ret === void 0) { ret = []; }
     if (Array.isArray(arr)) {
@@ -82,6 +59,7 @@ function flatten(arr, ret) {
 }
 exports.flatten = flatten;
 function inferShape(val) {
+    var firstElem = val;
     if (isTypedArray(val)) {
         return [val.length];
     }
@@ -89,13 +67,32 @@ function inferShape(val) {
         return [];
     }
     var shape = [];
-    while (val instanceof Array) {
-        shape.push(val.length);
-        val = val[0];
+    while (firstElem instanceof Array) {
+        shape.push(firstElem.length);
+        firstElem = firstElem[0];
+    }
+    if (val instanceof Array) {
+        deepAssertShapeConsistency(val, shape, []);
     }
     return shape;
 }
 exports.inferShape = inferShape;
+function deepAssertShapeConsistency(val, shape, indices) {
+    indices = indices || [];
+    if (!(val instanceof Array)) {
+        assert(shape.length === 0, function () { return "Element arr[" + indices.join('][') + "] is a primitive, " +
+            ("but should be an array of " + shape[0] + " elements"); });
+        return;
+    }
+    assert(shape.length > 0, function () { return "Element arr[" + indices.join('][') + "] should be a primitive, " +
+        ("but is an array of " + val.length + " elements"); });
+    assert(val.length === shape[0], function () { return "Element arr[" + indices.join('][') + "] should have " + shape[0] + " " +
+        ("elements, but has " + val.length + " elements"); });
+    var subShape = shape.slice(1);
+    for (var i = 0; i < val.length; ++i) {
+        deepAssertShapeConsistency(val[i], subShape, indices.concat(i));
+    }
+}
 function sizeFromShape(shape) {
     if (shape.length === 0) {
         return 1;
@@ -189,22 +186,6 @@ function repeatedTry(checkFn, delayFn, maxCounter) {
     });
 }
 exports.repeatedTry = repeatedTry;
-function getQueryParams(queryString) {
-    var params = {};
-    queryString.replace(/[?&]([^=?&]+)(?:=([^&]*))?/g, function (s) {
-        var t = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            t[_i - 1] = arguments[_i];
-        }
-        decodeParam(params, t[0], t[1]);
-        return t.join('=');
-    });
-    return params;
-}
-exports.getQueryParams = getQueryParams;
-function decodeParam(params, name, value) {
-    params[decodeURIComponent(name)] = decodeURIComponent(value || '');
-}
 function inferFromImplicitShape(shape, size) {
     var shapeProd = 1;
     var implicitIdx = -1;
@@ -280,16 +261,7 @@ function getTypedArrayFromDType(dtype, size) {
     return values;
 }
 exports.getTypedArrayFromDType = getTypedArrayFromDType;
-function isTensorInList(tensor, tensorList) {
-    for (var i = 0; i < tensorList.length; i++) {
-        if (tensorList[i].id === tensor.id) {
-            return true;
-        }
-    }
-    return false;
-}
-exports.isTensorInList = isTensorInList;
-function checkForNaN(vals, dtype, name) {
+function checkComputationForNaN(vals, dtype, name) {
     if (dtype !== 'float32') {
         return;
     }
@@ -299,32 +271,18 @@ function checkForNaN(vals, dtype, name) {
         }
     }
 }
-exports.checkForNaN = checkForNaN;
-function flattenNameArrayMap(nameArrayMap, keys) {
-    var xs = [];
-    if (nameArrayMap instanceof tensor_1.Tensor) {
-        xs.push(nameArrayMap);
+exports.checkComputationForNaN = checkComputationForNaN;
+function checkConversionForNaN(vals, dtype) {
+    if (dtype === 'float32') {
+        return;
     }
-    else {
-        var xMap = nameArrayMap;
-        for (var i = 0; i < keys.length; i++) {
-            xs.push(xMap[keys[i]]);
+    for (var i = 0; i < vals.length; i++) {
+        if (isNaN(vals[i])) {
+            throw Error("NaN is not a valid value for dtype: '" + dtype + "'.");
         }
     }
-    return xs;
 }
-exports.flattenNameArrayMap = flattenNameArrayMap;
-function unflattenToNameArrayMap(keys, flatArrays) {
-    if (keys.length !== flatArrays.length) {
-        throw new Error("Cannot unflatten Tensor[], keys and arrays are not of same length.");
-    }
-    var result = {};
-    for (var i = 0; i < keys.length; i++) {
-        result[keys[i]] = flatArrays[i];
-    }
-    return result;
-}
-exports.unflattenToNameArrayMap = unflattenToNameArrayMap;
+exports.checkConversionForNaN = checkConversionForNaN;
 function hasEncodingLoss(oldType, newType) {
     if (newType === 'float32') {
         return false;
@@ -338,11 +296,14 @@ function hasEncodingLoss(oldType, newType) {
     return true;
 }
 exports.hasEncodingLoss = hasEncodingLoss;
-function copyTypedArray(array, dtype) {
+function copyTypedArray(array, dtype, debugMode) {
     if (dtype == null || dtype === 'float32') {
         return new Float32Array(array);
     }
     else if (dtype === 'int32') {
+        if (debugMode) {
+            checkConversionForNaN(array, dtype);
+        }
         return new Int32Array(array);
     }
     else if (dtype === 'bool') {
@@ -358,7 +319,6 @@ function copyTypedArray(array, dtype) {
         throw new Error("Unknown data type " + dtype);
     }
 }
-exports.copyTypedArray = copyTypedArray;
 function isTypedArray(a) {
     return a instanceof Float32Array || a instanceof Int32Array ||
         a instanceof Uint8Array;
@@ -380,33 +340,6 @@ function isFunction(f) {
     return !!(f && f.constructor && f.call && f.apply);
 }
 exports.isFunction = isFunction;
-function getTensorsInContainer(result) {
-    var list = [];
-    var seen = new Set();
-    walkTensorContainer(result, list, seen);
-    return list;
-}
-exports.getTensorsInContainer = getTensorsInContainer;
-function walkTensorContainer(container, list, seen) {
-    if (container == null) {
-        return;
-    }
-    if (container instanceof tensor_1.Tensor) {
-        list.push(container);
-        return;
-    }
-    if (!isIterable(container)) {
-        return;
-    }
-    var iterable = container;
-    for (var k in iterable) {
-        var val = iterable[k];
-        if (!seen.has(val)) {
-            seen.add(val);
-            walkTensorContainer(val, list, seen);
-        }
-    }
-}
 function nearestDivisor(size, start) {
     for (var i = start; i < size; ++i) {
         if (size % i === 0) {
@@ -416,7 +349,69 @@ function nearestDivisor(size, start) {
     return size;
 }
 exports.nearestDivisor = nearestDivisor;
-function isIterable(obj) {
-    return Array.isArray(obj) || typeof obj === 'object';
+function computeStrides(shape) {
+    var rank = shape.length;
+    if (rank < 2) {
+        return [];
+    }
+    var strides = new Array(rank - 1);
+    strides[rank - 2] = shape[rank - 1];
+    for (var i = rank - 3; i >= 0; --i) {
+        strides[i] = strides[i + 1] * shape[i + 1];
+    }
+    return strides;
 }
+exports.computeStrides = computeStrides;
+function toTypedArray(a, dtype, debugMode) {
+    if (noConversionNeeded(a, dtype)) {
+        return a;
+    }
+    if (Array.isArray(a)) {
+        a = flatten(a);
+    }
+    return copyTypedArray(a, dtype, debugMode);
+}
+exports.toTypedArray = toTypedArray;
+function noConversionNeeded(a, dtype) {
+    return (a instanceof Float32Array && dtype === 'float32') ||
+        (a instanceof Int32Array && dtype === 'int32') ||
+        (a instanceof Uint8Array && dtype === 'bool');
+}
+function makeOnesTypedArray(size, dtype) {
+    var array = makeZerosTypedArray(size, dtype);
+    for (var i = 0; i < array.length; i++) {
+        array[i] = 1;
+    }
+    return array;
+}
+exports.makeOnesTypedArray = makeOnesTypedArray;
+function makeZerosTypedArray(size, dtype) {
+    if (dtype == null || dtype === 'float32') {
+        return new Float32Array(size);
+    }
+    else if (dtype === 'int32') {
+        return new Int32Array(size);
+    }
+    else if (dtype === 'bool') {
+        return new Uint8Array(size);
+    }
+    else {
+        throw new Error("Unknown data type " + dtype);
+    }
+}
+exports.makeZerosTypedArray = makeZerosTypedArray;
+function now() {
+    if (typeof performance !== 'undefined') {
+        return performance.now();
+    }
+    else if (typeof process !== 'undefined') {
+        var time = process.hrtime();
+        return time[0] * 1000 + time[1] / 1000000;
+    }
+    else {
+        throw new Error('Can not measure time in this environment. You should run tf.js ' +
+            'in the browser or in Node.js');
+    }
+}
+exports.now = now;
 //# sourceMappingURL=util.js.map

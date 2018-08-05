@@ -26,6 +26,7 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     concat(a: Tensor2D, b: Tensor2D): Tensor2D;
     neg<T extends Tensor>(a: T): T;
     add(a: Tensor, b: Tensor): Tensor;
+    addN<T extends Tensor>(tensors: T[]): T;
     subtract(a: Tensor, b: Tensor): Tensor;
     multiply(a: Tensor, b: Tensor): Tensor;
     realDivide(a: Tensor, b: Tensor): Tensor;
@@ -43,15 +44,16 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     logicalNot<T extends Tensor>(a: T): T;
     logicalAnd(a: Tensor, b: Tensor): Tensor;
     logicalOr(a: Tensor, b: Tensor): Tensor;
-    where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
-    topKValues<T extends Tensor>(x: T, k: number): Tensor1D;
-    topKIndices(x: Tensor, k: number): Tensor1D;
+    where(condition: Tensor): Tensor2D;
+    select(condition: Tensor, a: Tensor, b: Tensor): Tensor;
+    topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
     min(x: Tensor, axes: number[]): Tensor;
     minimum(a: Tensor, b: Tensor): Tensor;
     mod(a: Tensor, b: Tensor): Tensor;
     max(x: Tensor, axes: number[]): Tensor;
     maximum(a: Tensor, b: Tensor): Tensor;
     all(x: Tensor, axes: number[]): Tensor;
+    any(x: Tensor, axes: number[]): Tensor;
     squaredDifference(a: Tensor, b: Tensor): Tensor;
     ceil<T extends Tensor>(x: T): T;
     floor<T extends Tensor>(x: T): T;
@@ -106,13 +108,18 @@ export interface KernelBackend extends TensorStorage, BackendTimer {
     pad<T extends Tensor>(x: T, paddings: Array<[number, number]>, constantValue: number): T;
     transpose<T extends Tensor>(x: T, perm: number[]): T;
     gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
+    batchToSpaceND<T extends Tensor>(x: T, blockShape: number[], crops: number[][]): T;
+    spaceToBatchND<T extends Tensor>(x: T, blockShape: number[], paddings: number[][]): T;
     resizeBilinear(x: Tensor4D, newHeight: number, newWidth: number, alignCorners: boolean): Tensor4D;
     resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor4D;
     resizeNearestNeighbor(x: Tensor4D, newHEight: number, newWidth: number, alignCorners: boolean): Tensor4D;
+    resizeNearestNeighborBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor4D;
     batchNormalization(x: Tensor4D, mean: Tensor4D | Tensor1D, variance: Tensor4D | Tensor1D, varianceEpsilon: number, scale?: Tensor4D | Tensor1D, offset?: Tensor4D | Tensor1D): Tensor4D;
     localResponseNormalization4D(x: Tensor4D, radius: number, bias: number, alpha: number, beta: number): Tensor4D;
+    LRNGrad(dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D, radius: number, bias: number, alpha: number, beta: number): Tensor4D;
     multinomial(logits: Tensor2D, normalized: boolean, numSamples: number, seed: number): Tensor2D;
     oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number): Tensor2D;
     cumsum(x: Tensor, axis: number, exclusive: boolean, reverse: boolean): Tensor;
+    nonMaxSuppression(boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number, iouThreshold: number, scoreThreshold?: number): Tensor1D;
     dispose(): void;
 }

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('depthwiseConv2D', test_util_1.ALL_ENVS, function () {
     it('input=1x3x3x1,f=2,s=1,d=1,p=valid,chMul=1', function () {
         var fSize = 2;
@@ -244,6 +244,20 @@ jasmine_util_1.describeWithFlags('depthwiseConv2D', test_util_1.ALL_ENVS, functi
         expect(function () { return tf.depthwiseConv2d(x, {}, stride, pad, dataFormat, dilation); })
             .toThrowError(e);
     });
+    it('accepts a tensor-like object', function () {
+        var pad = 'valid';
+        var stride = 1;
+        var x = [[
+                [[0.230664], [0.987388], [0.0685208]],
+                [[0.419224], [0.887861], [0.731641]],
+                [[0.0741907], [0.409265], [0.351377]]
+            ]];
+        var w = [[[[0.303873]], [[0.229223]]], [[[0.144333]], [[0.803373]]]];
+        var result = tf.depthwiseConv2d(x, w, stride, pad);
+        expect(result.shape).toEqual([1, 2, 2, 1]);
+        var expected = [1.07022, 1.03167, 0.67041, 0.778863];
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('depthwiseConv2d gradients', test_util_1.ALL_ENVS, function () {
     var images;
@@ -252,98 +266,89 @@ jasmine_util_1.describeWithFlags('depthwiseConv2d gradients', test_util_1.ALL_EN
     var stride = 1;
     var pad = 'same';
     beforeEach(function () {
-        images = tf.tensor4d([[
-                [[2, 3, 1], [3, 0, 2]],
-                [[0, 4, 1], [3, 1, 3]]
-            ], [
-                [[2, 1, 0], [0, 3, 3]],
-                [[4, 0, 1], [1, 4, 1]]
-            ]]);
-        filter = tf.tensor4d([[
-                [[1, 1], [1, 1], [0, 0]],
-                [[0, 1], [1, 1], [1, 1]]
-            ], [
-                [[1, 0], [1, 1], [0, 0]],
-                [[0, 1], [1, 0], [0, 0]]
-            ]]);
-        result = tf.tensor4d([[
+        images = tf.tensor4d([
+            [[[2, 3, 1], [3, 0, 2]], [[0, 4, 1], [3, 1, 3]]],
+            [[[2, 1, 0], [0, 3, 3]], [[4, 0, 1], [1, 4, 1]]]
+        ]);
+        filter = tf.tensor4d([
+            [[[1, 1], [1, 1], [0, 0]], [[0, 1], [1, 1], [1, 1]]],
+            [[[1, 0], [1, 1], [0, 0]], [[0, 1], [1, 0], [0, 0]]]
+        ]);
+        result = tf.tensor4d([
+            [
                 [[2, 8, 8, 7, 2, 2], [6, 3, 1, 1, 0, 0]],
                 [[0, 3, 5, 5, 3, 3], [3, 3, 1, 1, 0, 0]]
-            ], [
+            ],
+            [
                 [[6, 3, 8, 4, 3, 3], [1, 0, 7, 7, 0, 0]],
                 [[4, 5, 4, 4, 1, 1], [1, 1, 4, 4, 0, 0]]
-            ]]);
+            ]
+        ]);
     });
     it('wrt input', function () {
         var _a = tf.valueAndGrad(function (x) { return tf.depthwiseConv2d(x, filter, stride, pad); })(images), value = _a.value, grad = _a.grad;
         test_util_1.expectArraysClose(value, result);
-        var expectedGrad = tf.tensor4d([[
-                [[2., 2., 0.], [3., 4., 2.]],
-                [[3., 4., 0.], [5., 7., 2.]]
-            ], [
-                [[2., 2., 0.], [3., 4., 2.]],
-                [[3., 4., 0.], [5., 7., 2.]]
-            ]]);
+        var expectedGrad = tf.tensor4d([
+            [[[2., 2., 0.], [3., 4., 2.]], [[3., 4., 0.], [5., 7., 2.]]],
+            [[[2., 2., 0.], [3., 4., 2.]], [[3., 4., 0.], [5., 7., 2.]]]
+        ]);
         test_util_1.expectArraysClose(grad, expectedGrad);
     });
     it('wrt input, squared output', function () {
-        var grad = tf.grad(function (x) { return tf.square(tf.depthwiseConv2d(x, filter, stride, pad)); })(images);
-        var expectedGrad = tf.tensor4d([[
-                [[20., 30., 0.], [34., 34., 8.]],
-                [[10., 50., 0.], [46., 44., 12.]]
-            ], [
-                [[18., 24., 0.], [8., 52., 12.]],
-                [[30., 40., 0.], [22., 76., 4.]]
-            ]]);
+        var grad = tf.grad(function (x) {
+            return tf.square(tf.depthwiseConv2d(x, filter, stride, pad));
+        })(images);
+        var expectedGrad = tf.tensor4d([
+            [[[20., 30., 0.], [34., 34., 8.]], [[10., 50., 0.], [46., 44., 12.]]],
+            [[[18., 24., 0.], [8., 52., 12.]], [[30., 40., 0.], [22., 76., 4.]]]
+        ]);
         test_util_1.expectArraysClose(grad, expectedGrad);
     });
     it('wrt filter', function () {
         var _a = tf.valueAndGrad(function (f) { return tf.depthwiseConv2d(images, f, stride, pad); })(filter), value = _a.value, grad = _a.grad;
         test_util_1.expectArraysClose(value, result);
-        var expectedGrad = tf.tensor4d([[
-                [[15., 15.], [16., 16.], [12., 12.]],
-                [[7., 7.], [8., 8.], [9., 9.]]
-            ], [
-                [[8., 8.], [9., 9.], [6., 6.]],
-                [[4., 4.], [5., 5.], [4., 4.]]
-            ]]);
+        var expectedGrad = tf.tensor4d([
+            [[[15., 15.], [16., 16.], [12., 12.]], [[7., 7.], [8., 8.], [9., 9.]]],
+            [[[8., 8.], [9., 9.], [6., 6.]], [[4., 4.], [5., 5.], [4., 4.]]]
+        ]);
         test_util_1.expectArraysClose(grad, expectedGrad);
     });
     it('wrt filter, squared output', function () {
-        var grad = tf.grad(function (f) { return tf.square(tf.depthwiseConv2d(images, f, stride, pad)); })(filter);
-        var expectedGrad = tf.tensor4d([[
+        var grad = tf.grad(function (f) {
+            return tf.square(tf.depthwiseConv2d(images, f, stride, pad));
+        })(filter);
+        var expectedGrad = tf.tensor4d([
+            [
                 [[120., 122.], [180., 166.], [12., 12.]],
                 [[20., 76.], [90., 66.], [46., 46.]]
-            ], [
+            ],
+            [
                 [[86., 42.], [122., 114.], [10., 10.]],
                 [[24., 54.], [80., 46.], [18., 18.]]
-            ]]);
+            ]
+        ]);
         test_util_1.expectArraysClose(grad, expectedGrad);
     });
     it('throws error on dilations > 1', function () {
-        var grad = tf.grad(function (x) { return tf.depthwiseConv2d(x, filter, stride, pad, 'NHWC', 2); });
+        var grad = tf.grad(function (x) {
+            return tf.depthwiseConv2d(x, filter, stride, pad, 'NHWC', 2);
+        });
         expect(function () { return grad(images); })
             .toThrowError(/dilation rates greater than 1 are not yet supported/);
     });
     it('wrt input, stride=2, pad=valid', function () {
         var dx = tf.grad(function (x) { return tf.depthwiseConv2d(x, filter, 2, 'valid'); })(images);
-        test_util_1.expectArraysClose(dx, tf.tensor4d([[
-                [[2., 2., 0.], [1., 2., 2.]],
-                [[1., 2., 0.], [1., 1., 0.]]
-            ], [
-                [[2., 2., 0.], [1., 2., 2.]],
-                [[1., 2., 0.], [1., 1., 0.]]
-            ]]));
+        test_util_1.expectArraysClose(dx, tf.tensor4d([
+            [[[2., 2., 0.], [1., 2., 2.]], [[1., 2., 0.], [1., 1., 0.]]],
+            [[[2., 2., 0.], [1., 2., 2.]], [[1., 2., 0.], [1., 1., 0.]]]
+        ]));
     });
     it('wrt filter, stride=2, pad=valid', function () {
         var df = tf.grad(function (f) { return tf.depthwiseConv2d(images, f, 2, 'valid'); })(filter);
-        test_util_1.expectArraysClose(df, tf.tensor4d([[
-                [[4., 4.], [4., 4.], [1., 1.]],
-                [[3., 3.], [3., 3.], [5., 5.]]
-            ], [
-                [[4., 4.], [4., 4.], [2., 2.]],
-                [[4., 4.], [5., 5.], [4., 4.]]
-            ]]));
+        test_util_1.expectArraysClose(df, tf.tensor4d([
+            [[[4., 4.], [4., 4.], [1., 1.]], [[3., 3.], [3., 3.], [5., 5.]]],
+            [[[4., 4.], [4., 4.], [2., 2.]], [[4., 4.], [5., 5.], [4., 4.]]]
+        ]));
     });
     it('wrt input and filter, 1x3x3x1 and 2x2x1x1', function () {
         var fSize = 2;
@@ -356,17 +361,16 @@ jasmine_util_1.describeWithFlags('depthwiseConv2d gradients', test_util_1.ALL_EN
             0.0741907, 0.409265, 0.351377
         ], [1, 3, 3, inDepth]);
         var f = tf.tensor4d([0.303873, 0.229223, 0.144333, 0.803373], [fSize, fSize, inDepth, chMul]);
-        var _a = tf.grads(function (x, f) { return tf.depthwiseConv2d(x, f, stride, pad); })([x, f]), dx = _a[0], df = _a[1];
+        var _a = tf.grads(function (x, f) {
+            return tf.depthwiseConv2d(x, f, stride, pad);
+        })([x, f]), dx = _a[0], df = _a[1];
         test_util_1.expectArraysClose(dx, tf.tensor4d([[
                 [[0.303873], [0.533096], [0.229223]],
                 [[0.448206], [1.480802], [1.032596]],
                 [[0.144333], [0.947706], [0.803373]]
             ]]));
         test_util_1.expectArraysClose(df, tf.tensor4d([
-            [[[2.525137]], [[2.6754108]]
-            ], [
-                [[1.7905407]], [[2.380144]]
-            ]
+            [[[2.525137]], [[2.6754108]]], [[[1.7905407]], [[2.380144]]]
         ]));
     });
 });

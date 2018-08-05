@@ -168,5 +168,11 @@ jasmine_util_1.describeWithFlags('stridedSlice', test_util_1.ALL_ENVS, function 
         expect(function () { return tf.stridedSlice({}, [0], [0], [1]); })
             .toThrowError(/Argument 'x' passed to 'stridedSlice' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var tensor = [0, 1, 2, 3];
+        var output = tf.stridedSlice(tensor, [0], [3], [2]);
+        expect(output.shape).toEqual([2]);
+        test_util_1.expectArraysClose(output, [0, 2]);
+    });
 });
 //# sourceMappingURL=strided_slice_test.js.map

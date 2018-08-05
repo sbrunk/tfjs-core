@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -37,6 +37,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var seedrandom = require("seedrandom");
 var environment_1 = require("../environment");
+var log_1 = require("../log");
+var array_ops_util = require("../ops/array_ops_util");
 var axis_util = require("../ops/axis_util");
 var broadcast_util = require("../ops/broadcast_util");
 var concat_util = require("../ops/concat_util");
@@ -46,9 +48,13 @@ var ops_1 = require("../ops/ops");
 var selu_util = require("../ops/selu_util");
 var slice_util_1 = require("../ops/slice_util");
 var tensor_1 = require("../tensor");
-var types = require("../types");
+var types_1 = require("../types");
 var util = require("../util");
+var util_1 = require("../util");
 var backend_util = require("./backend_util");
+var non_max_suppression_impl_1 = require("./non_max_suppression_impl");
+var topk_impl_1 = require("./topk_impl");
+var where_impl_1 = require("./where_impl");
 var MathBackendCPU = (function () {
     function MathBackendCPU() {
         this.data = new WeakMap();
@@ -61,13 +67,13 @@ var MathBackendCPU = (function () {
         if (this.firstUse) {
             this.firstUse = false;
             if (environment_1.ENV.get('IS_NODE')) {
-                console.warn('\n============================\n' +
+                log_1.warn('\n============================\n' +
                     'Hi there 👋. Looks like you are running TensorFlow.js in ' +
                     'Node.js. To speed things up dramatically, install our node ' +
                     'backend, which binds to TensorFlow C++, by running ' +
                     'npm i @tensorflow/tfjs-node, ' +
                     'or npm i @tensorflow/tfjs-node-gpu if you have CUDA. ' +
-                    'Then call require(\'tensorflow/tfjs-node\'); (-gpu ' +
+                    'Then call require(\'@tensorflow/tfjs-node\'); (-gpu ' +
                     'suffix for CUDA) at the start of your program. ' +
                     'Visit https://github.com/tensorflow/tfjs-node for more details.' +
                     '\n============================\n');
@@ -87,16 +93,21 @@ var MathBackendCPU = (function () {
     };
     MathBackendCPU.prototype.fromPixels = function (pixels, numChannels) {
         if (pixels == null) {
-            throw new Error('MathBackendCPU.writePixels(): pixels can not be null');
+            throw new Error('pixels passed to tf.fromPixels() can not be null');
         }
         var vals;
-        if (pixels instanceof ImageData) {
-            vals = pixels.data;
+        if (environment_1.ENV.get('IS_NODE') && pixels.getContext == null) {
+            throw new Error('When running in node, pixels must be an HTMLCanvasElement ' +
+                'like the one returned by the `canvas` npm package');
         }
-        else if (pixels instanceof HTMLCanvasElement) {
-            vals = pixels.getContext('2d')
+        if (pixels.getContext != null) {
+            vals = pixels
+                .getContext('2d')
                 .getImageData(0, 0, pixels.width, pixels.height)
                 .data;
+        }
+        else if (pixels instanceof ImageData) {
+            vals = pixels.data;
         }
         else if (pixels instanceof HTMLImageElement ||
             pixels instanceof HTMLVideoElement) {
@@ -112,7 +123,9 @@ var MathBackendCPU = (function () {
                 .data;
         }
         else {
-            throw new Error("pixels is of unknown type: " + pixels.constructor.name);
+            throw new Error('pixels passed to tf.fromPixels() must be either an ' +
+                "HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or " +
+                ("ImageData, but was " + pixels.constructor.name));
         }
         var values;
         if (numChannels === 4) {
@@ -150,9 +163,9 @@ var MathBackendCPU = (function () {
         return __awaiter(this, void 0, void 0, function () {
             var start, kernelMs;
             return __generator(this, function (_a) {
-                start = performance.now();
+                start = util_1.now();
                 f();
-                kernelMs = performance.now() - start;
+                kernelMs = util_1.now() - start;
                 return [2, { kernelMs: kernelMs }];
             });
         });
@@ -233,10 +246,22 @@ var MathBackendCPU = (function () {
         return this.multiply(ops.scalar(-1), x);
     };
     MathBackendCPU.prototype.add = function (a, b) {
-        return this.broadcastedBinaryOp(a, b, types.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue + bValue; });
+        return this.broadcastedBinaryOp(a, b, types_1.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue + bValue; });
+    };
+    MathBackendCPU.prototype.addN = function (tensors) {
+        var vals = tensors.map(function (t) { return t.dataSync(); });
+        var result = ops.buffer(tensors[0].shape, tensors[0].dtype);
+        var resultVals = result.values;
+        for (var i = 0; i < tensors.length; i++) {
+            var currVals = vals[i];
+            for (var j = 0; j < resultVals.length; j++) {
+                resultVals[j] += currVals[j];
+            }
+        }
+        return result.toTensor();
     };
     MathBackendCPU.prototype.subtract = function (a, b) {
-        return this.broadcastedBinaryOp(a, b, types.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue - bValue; });
+        return this.broadcastedBinaryOp(a, b, types_1.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue - bValue; });
     };
     MathBackendCPU.prototype.pow = function (a, b) {
         return this.broadcastedBinaryOp(a, b, a.dtype, function (aValue, bValue) { return Math.pow(aValue, bValue); });
@@ -269,7 +294,7 @@ var MathBackendCPU = (function () {
         return ops.tensor2d(result, [leftDim, rightDim]);
     };
     MathBackendCPU.prototype.multiply = function (a, b) {
-        return this.broadcastedBinaryOp(a, b, types.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue * bValue; });
+        return this.broadcastedBinaryOp(a, b, types_1.upcastType(a.dtype, b.dtype), function (aValue, bValue) { return aValue * bValue; });
     };
     MathBackendCPU.prototype.realDivide = function (a, b) {
         var op = function (a, b) { return a / b; };
@@ -284,7 +309,7 @@ var MathBackendCPU = (function () {
     MathBackendCPU.prototype.sum = function (x, axes) {
         axis_util.assertAxesAreInnerMostDims('sum', axes, x.rank);
         var _a = axis_util.computeOutAndReduceShapes(x.shape, axes), outShape = _a[0], reduceShape = _a[1];
-        var resultDtype = types.upcastType(x.dtype, 'int32');
+        var resultDtype = types_1.upcastType(x.dtype, 'int32');
         var result = ops.zeros(outShape, resultDtype);
         var reduceSize = util.sizeFromShape(reduceShape);
         var vals = result.dataSync();
@@ -364,7 +389,7 @@ var MathBackendCPU = (function () {
             throw new Error("backend.cumsum in CPU expects an inner-most axis=" + (x.rank - 1) + " " +
                 ("but got axis=" + axis));
         }
-        var resultDtype = types.upcastType(x.dtype, 'int32');
+        var resultDtype = types_1.upcastType(x.dtype, 'int32');
         var result = ops.zeros(x.shape, resultDtype);
         var vals = result.dataSync();
         var aVals = x.dataSync();
@@ -435,11 +460,11 @@ var MathBackendCPU = (function () {
             return aVal || bVal;
         });
     };
-    MathBackendCPU.prototype.where = function (condition, a, b, dtype) {
+    MathBackendCPU.prototype.select = function (condition, a, b) {
         var values = condition.dataSync();
         var aValues = a.dataSync();
         var bValues = b.dataSync();
-        var result = ops.zeros(a.shape, dtype);
+        var result = ops.zeros(a.shape, types_1.upcastType(a.dtype, b.dtype));
         var newValues = result.dataSync();
         var index = 0;
         var offset = condition.rank === 0 || condition.rank > 1 || a.rank === 1 ?
@@ -457,31 +482,13 @@ var MathBackendCPU = (function () {
         }
         return result;
     };
-    MathBackendCPU.prototype.topKValues = function (x, k) {
-        return this.topK(x, k).values;
+    MathBackendCPU.prototype.where = function (condition) {
+        var condVals = condition.dataSync();
+        return where_impl_1.whereImpl(condition.shape, condVals);
     };
-    MathBackendCPU.prototype.topKIndices = function (x, k) {
-        return this.topK(x, k).indices;
-    };
-    MathBackendCPU.prototype.topK = function (x, k) {
-        var values = x.dataSync();
-        var valuesAndIndices = [];
-        for (var i = 0; i < values.length; i++) {
-            valuesAndIndices.push({ value: values[i], index: i });
-        }
-        valuesAndIndices.sort(function (a, b) {
-            return b.value - a.value;
-        });
-        var topkValues = util.getTypedArrayFromDType(x.dtype, k);
-        var topkIndices = new Int32Array(k);
-        for (var i = 0; i < k; i++) {
-            topkValues[i] = valuesAndIndices[i].value;
-            topkIndices[i] = valuesAndIndices[i].index;
-        }
-        return {
-            values: ops.tensor1d(topkValues, x.dtype),
-            indices: ops.tensor1d(topkIndices, 'int32')
-        };
+    MathBackendCPU.prototype.topk = function (x, k, sorted) {
+        var xVals = x.dataSync();
+        return topk_impl_1.topkImpl(xVals, x.shape, x.dtype, k, sorted);
     };
     MathBackendCPU.prototype.min = function (x, axes) {
         axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
@@ -555,6 +562,24 @@ var MathBackendCPU = (function () {
                 all = all && value;
             }
             vals[i] = all;
+        }
+        return result;
+    };
+    MathBackendCPU.prototype.any = function (x, axes) {
+        axis_util.assertAxesAreInnerMostDims('any', axes, x.rank);
+        var _a = axis_util.computeOutAndReduceShapes(x.shape, axes), outShape = _a[0], reduceShape = _a[1];
+        var result = ops.zeros(outShape, x.dtype);
+        var reduceSize = util.sizeFromShape(reduceShape);
+        var vals = result.dataSync();
+        var aVals = x.dataSync();
+        for (var i = 0; i < vals.length; ++i) {
+            var offset = i * reduceSize;
+            var anyVal = aVals[offset];
+            for (var j = 0; j < reduceSize; ++j) {
+                var value = aVals[offset + j];
+                anyVal = anyVal || value;
+            }
+            vals[i] = anyVal;
         }
         return result;
     };
@@ -1229,6 +1254,33 @@ var MathBackendCPU = (function () {
         }
         return result.toTensor();
     };
+    MathBackendCPU.prototype.batchToSpaceND = function (x, blockShape, crops) {
+        var prod = blockShape.reduce(function (a, b) { return a * b; });
+        var reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+        var permuted = array_ops_util.getPermuted(reshaped.length, blockShape.length);
+        var reshapedPermuted = array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+        var sliceBeginCoords = array_ops_util.getSliceBeginCoords(crops, blockShape.length);
+        var sliceSize = array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+        return x.reshape(reshaped)
+            .transpose(permuted)
+            .reshape(reshapedPermuted)
+            .slice(sliceBeginCoords, sliceSize);
+    };
+    MathBackendCPU.prototype.spaceToBatchND = function (x, blockShape, paddings) {
+        var prod = blockShape.reduce(function (a, b) { return a * b; });
+        var completePaddings = [[0, 0]];
+        completePaddings.push.apply(completePaddings, paddings);
+        for (var i = 1 + blockShape.length; i < x.shape.length; ++i) {
+            completePaddings.push([0, 0]);
+        }
+        var paddedX = x.pad(completePaddings);
+        var reshapedPaddedShape = array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+        var permutedReshapedPaddedPermutation = array_ops_util.getPermuted(reshapedPaddedShape.length, blockShape.length, false);
+        var flattenShape = array_ops_util.getReshapedPermuted(paddedX.shape, blockShape, prod, false);
+        return paddedX.reshape(reshapedPaddedShape)
+            .transpose(permutedReshapedPaddedPermutation)
+            .reshape(flattenShape);
+    };
     MathBackendCPU.prototype.pool = function (x, convInfo, poolType) {
         var strideHeight = convInfo.strideHeight;
         var strideWidth = convInfo.strideWidth;
@@ -1495,8 +1547,14 @@ var MathBackendCPU = (function () {
     MathBackendCPU.prototype.resizeNearestNeighbor = function (x, newHeight, newWidth, alignCorners) {
         var _a = x.shape, batch = _a[0], oldHeight = _a[1], oldWidth = _a[2], numChannels = _a[3];
         var output = ops.buffer([batch, newHeight, newWidth, numChannels], x.dtype);
-        var effectiveInputSize = alignCorners ? [oldHeight - 1, oldWidth - 1] : [oldHeight, oldWidth];
-        var effectiveOutputSize = alignCorners ? [newHeight - 1, newWidth - 1] : [newHeight, newWidth];
+        var effectiveInputSize = [
+            (alignCorners && newHeight > 1) ? oldHeight - 1 : oldHeight,
+            (alignCorners && newWidth > 1) ? oldWidth - 1 : oldWidth
+        ];
+        var effectiveOutputSize = [
+            (alignCorners && newHeight > 1) ? newHeight - 1 : newHeight,
+            (alignCorners && newWidth > 1) ? newWidth - 1 : newWidth
+        ];
         for (var b = 0; b < batch; b++) {
             for (var r = 0; r < newHeight; r++) {
                 for (var c = 0; c < newWidth; c++) {
@@ -1509,6 +1567,61 @@ var MathBackendCPU = (function () {
                             Math.floor(sourceFracCol));
                         var newValue = x.get(b, sourceNearestRow, sourceNearestCol, d);
                         output.set(newValue, b, r, c, d);
+                    }
+                }
+            }
+        }
+        return output.toTensor();
+    };
+    MathBackendCPU.prototype.resizeNearestNeighborBackprop = function (dy, x, alignCorners) {
+        var _a = x.shape, batch = _a[0], xHeight = _a[1], xWidth = _a[2], depth = _a[3];
+        var _b = dy.shape, yHeight = _b[1], yWidth = _b[2];
+        var output = ops.buffer([batch, xHeight, xWidth, depth], x.dtype);
+        var effectiveXSize = [
+            (alignCorners && yHeight > 1) ? xHeight - 1 : xHeight,
+            (alignCorners && yWidth > 1) ? xWidth - 1 : xWidth
+        ];
+        var effectiveYSize = [
+            (alignCorners && yHeight > 1) ? yHeight - 1 : yHeight,
+            (alignCorners && yWidth > 1) ? yWidth - 1 : yWidth
+        ];
+        var heightScale = effectiveXSize[0] / effectiveYSize[0];
+        var widthScale = effectiveXSize[1] / effectiveYSize[1];
+        var invHeightScale = 1 / heightScale;
+        var invWidthScale = 1 / widthScale;
+        var winHeight = (Math.ceil(invHeightScale) * 2) + 2;
+        var winWidth = (Math.ceil(invWidthScale) * 2) + 2;
+        for (var b = 0; b < batch; b++) {
+            for (var r = 0; r < xHeight; r++) {
+                for (var c = 0; c < xWidth; c++) {
+                    var startRLerp = Math.floor(r * invHeightScale);
+                    var startDyR = Math.floor(startRLerp - (winHeight / 2));
+                    var startCLerp = Math.floor(c * invWidthScale);
+                    var startDyC = Math.floor(startCLerp - (winWidth / 2));
+                    for (var d = 0; d < depth; d++) {
+                        var accum = 0;
+                        for (var dyROffset = 0; dyROffset < winHeight; dyROffset++) {
+                            var dyR = dyROffset + startDyR;
+                            if (dyR < 0 || dyR >= yHeight) {
+                                continue;
+                            }
+                            for (var dyCOffSet = 0; dyCOffSet < winWidth; dyCOffSet++) {
+                                var dyC = dyCOffSet + startDyC;
+                                if (dyC < 0 || dyC >= yWidth) {
+                                    continue;
+                                }
+                                var sourceFracRow = effectiveXSize[0] * (dyR / effectiveYSize[0]);
+                                var sourceFracCol = effectiveXSize[1] * (dyC / effectiveYSize[1]);
+                                var sourceNearestRow = Math.min(xHeight - 1, alignCorners ? Math.round(sourceFracRow) :
+                                    Math.floor(sourceFracRow));
+                                var sourceNearestCol = Math.min(xWidth - 1, alignCorners ? Math.round(sourceFracCol) :
+                                    Math.floor(sourceFracCol));
+                                if (r === sourceNearestRow && c === sourceNearestCol) {
+                                    accum += dy.get(b, dyR, dyC, d);
+                                }
+                            }
+                        }
+                        output.set(accum, b, r, c, d);
                     }
                 }
             }
@@ -1555,6 +1668,38 @@ var MathBackendCPU = (function () {
         }
         return output.toTensor();
     };
+    MathBackendCPU.prototype.LRNGrad = function (dy, inputImage, outputImage, depthRadius, bias, alpha, beta) {
+        var batch = dy.shape[0];
+        var rows = dy.shape[1];
+        var cols = dy.shape[2];
+        var depth = dy.shape[3];
+        var output = ops.buffer([batch, rows, cols, depth], 'float32');
+        for (var b = 0; b < batch; ++b) {
+            for (var r = 0; r < rows; ++r) {
+                for (var c = 0; c < cols; ++c) {
+                    for (var d = 0; d < depth; ++d) {
+                        var depthBegin = Math.max(0, d - depthRadius);
+                        var depthEnd = Math.min(depth, d + depthRadius + 1);
+                        var norm = 0;
+                        for (var k = depthBegin; k < depthEnd; ++k) {
+                            norm += inputImage.get(b, r, c, k) * inputImage.get(b, r, c, k);
+                        }
+                        norm = alpha * norm + bias;
+                        for (var k = depthBegin; k < depthEnd; ++k) {
+                            var dyi = -2 * alpha * beta * inputImage.get(b, r, c, k) *
+                                outputImage.get(b, r, c, d) / norm;
+                            if (d === k) {
+                                dyi += Math.pow(norm, -beta);
+                            }
+                            dyi *= dy.get(b, r, c, d);
+                            output.set(dyi + output.get(b, r, c, k), b, r, c, k);
+                        }
+                    }
+                }
+            }
+        }
+        return output.toTensor();
+    };
     MathBackendCPU.prototype.multinomial = function (logits, normalized, numSamples, seed) {
         var probabilities = normalized ? logits : ops.softmax(logits);
         var batchSize = probabilities.shape[0];
@@ -1594,6 +1739,11 @@ var MathBackendCPU = (function () {
         }
         return ops.tensor2d(res, [indices.size, depth], 'int32');
     };
+    MathBackendCPU.prototype.nonMaxSuppression = function (boxes, scores, maxOutputSize, iouThreshold, scoreThreshold) {
+        var boxesVals = boxes.dataSync();
+        var scoresVals = scores.dataSync();
+        return non_max_suppression_impl_1.nonMaxSuppressionImpl(boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+    };
     MathBackendCPU.prototype.broadcastedBinaryOp = function (a, b, dtype, op) {
         var newShape = broadcast_util.assertAndGetBroadcastShape(a.shape, b.shape);
         var result = ops.buffer(newShape, dtype);
@@ -1622,5 +1772,5 @@ var MathBackendCPU = (function () {
     return MathBackendCPU;
 }());
 exports.MathBackendCPU = MathBackendCPU;
-environment_1.ENV.registerBackend('cpu', function () { return new MathBackendCPU(); }, 1);
+environment_1.ENV.registerBackend('cpu', function () { return new MathBackendCPU(); }, 1, tensor_1.setTensorTracker);
 //# sourceMappingURL=backend_cpu.js.map

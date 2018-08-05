@@ -35,9 +35,9 @@ var UpcastFloat32AndMap;
     UpcastFloat32AndMap["bool"] = "float32";
 })(UpcastFloat32AndMap || (UpcastFloat32AndMap = {}));
 var upcastTypeMap = {
-    float32: UpcastFloat32AndMap,
-    int32: UpcastInt32AndMap,
-    bool: UpcastBoolAndMap
+    'float32': UpcastFloat32AndMap,
+    'int32': UpcastInt32AndMap,
+    'bool': UpcastBoolAndMap
 };
 function upcastType(typeA, typeB) {
     return upcastTypeMap[typeA][typeB];

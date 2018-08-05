@@ -14,13 +14,6 @@ function assertParams(aShape, bShape, axis) {
     }
 }
 exports.assertParams = assertParams;
-function computeOutShape1D(x1Shape, x2Shape) {
-    util.assert(x1Shape.length === 1 && x2Shape.length === 1, 'x1 and x2 should be 1d array.');
-    var outputShape = x1Shape.slice();
-    outputShape[0] += x2Shape[0];
-    return outputShape;
-}
-exports.computeOutShape1D = computeOutShape1D;
 function computeOutShape(x1Shape, x2Shape, axis) {
     util.assert(x1Shape.length === x2Shape.length, 'x1 and x2 should have the same rank.');
     var outputShape = x1Shape.slice();

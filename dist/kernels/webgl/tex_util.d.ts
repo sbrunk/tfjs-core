@@ -3,12 +3,12 @@ export declare enum TextureUsage {
     RENDER = 0,
     UPLOAD = 1,
     PIXELS = 2,
-    DOWNLOAD = 3,
+    DOWNLOAD = 3
 }
 export declare enum PhysicalTextureType {
     FLOAT16 = 0,
     FLOAT32 = 1,
-    UNSIGNED_BYTE = 2,
+    UNSIGNED_BYTE = 2
 }
 export interface TextureData {
     texture: WebGLTexture;

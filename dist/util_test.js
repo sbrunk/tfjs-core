@@ -1,8 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var tf = require("./index");
-var jasmine_util_1 = require("./jasmine_util");
-var test_util_1 = require("./test_util");
 var util = require("./util");
 describe('Util', function () {
     it('Flatten arrays', function () {
@@ -89,12 +86,6 @@ describe('util.repeatedTry', function () {
             .catch(doneFn);
     });
 });
-describe('util.getQueryParams', function () {
-    it('basic', function () {
-        expect(util.getQueryParams('?a=1&b=hi&f=animal'))
-            .toEqual({ 'a': '1', 'b': 'hi', 'f': 'animal' });
-    });
-});
 describe('util.inferFromImplicitShape', function () {
     it('empty shape', function () {
         var result = util.inferFromImplicitShape([], 0);
@@ -163,45 +154,24 @@ describe('util.squeezeShape', function () {
         });
     });
 });
-describe('util.isTensorInList', function () {
-    it('not in list', function () {
-        var a = tf.scalar(1);
-        var list = [tf.scalar(1), tf.tensor1d([1, 2, 3])];
-        expect(util.isTensorInList(a, list)).toBe(false);
-    });
-    it('in list', function () {
-        var a = tf.scalar(1);
-        var list = [tf.scalar(2), tf.tensor1d([1, 2, 3]), a];
-        expect(util.isTensorInList(a, list)).toBe(true);
-    });
-});
-describe('util.checkForNaN', function () {
+describe('util.checkComputationForNaN', function () {
     it('Float32Array has NaN', function () {
-        expect(function () { return util.checkForNaN(new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32', ''); })
+        expect(function () { return util.checkComputationForNaN(new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32', ''); })
             .toThrowError();
     });
     it('Float32Array no NaN', function () {
-        expect(function () { return util.checkForNaN(new Float32Array([1, 2, 3, 4, -1, 255]), 'float32', ''); })
+        expect(function () { return util.checkComputationForNaN(new Float32Array([1, 2, 3, 4, -1, 255]), 'float32', ''); })
             .not.toThrowError();
     });
 });
-describe('util.flattenNameArrayMap', function () {
-    it('basic', function () {
-        var a = tf.scalar(1);
-        var b = tf.scalar(3);
-        var c = tf.tensor1d([1, 2, 3]);
-        var map = { a: a, b: b, c: c };
-        expect(util.flattenNameArrayMap(map, Object.keys(map))).toEqual([a, b, c]);
+describe('util.checkConversionForNaN', function () {
+    it('Float32Array has NaN', function () {
+        expect(function () { return util.checkConversionForNaN(new Float32Array([1, 2, 3, NaN, 4, 255]), 'float32'); })
+            .not.toThrowError();
     });
-});
-describe('util.unflattenToNameArrayMap', function () {
-    it('basic', function () {
-        var a = tf.scalar(1);
-        var b = tf.scalar(3);
-        var c = tf.tensor1d([1, 2, 3]);
-        expect(util.unflattenToNameArrayMap(['a', 'b', 'c'], [
-            a, b, c
-        ])).toEqual({ a: a, b: b, c: c });
+    it('Int32Array has NaN', function () {
+        expect(function () { return util.checkConversionForNaN([1, 2, 3, 4, NaN], 'int32'); })
+            .toThrowError();
     });
 });
 describe('util.hasEncodingLoss', function () {
@@ -224,39 +194,6 @@ describe('util.hasEncodingLoss', function () {
     });
     it('bool to bool', function () {
         expect(util.hasEncodingLoss('bool', 'bool')).toBe(false);
-    });
-});
-jasmine_util_1.describeWithFlags('getTensorsInContainer', test_util_1.CPU_ENVS, function () {
-    it('null input returns empty tensor', function () {
-        var results = util.getTensorsInContainer(null);
-        expect(results).toEqual([]);
-    });
-    it('tensor input returns one element tensor', function () {
-        var x = tf.scalar(1);
-        var results = util.getTensorsInContainer(x);
-        expect(results).toEqual([x]);
-    });
-    it('name tensor map returns flattened tensor', function () {
-        var x1 = tf.scalar(1);
-        var x2 = tf.scalar(3);
-        var x3 = tf.scalar(4);
-        var results = util.getTensorsInContainer({ x1: x1, x2: x2, x3: x3 });
-        expect(results).toEqual([x1, x2, x3]);
-    });
-    it('can extract from arbitrary depth', function () {
-        var container = [
-            { x: tf.scalar(1), y: tf.scalar(2) },
-            [[[tf.scalar(3)]], { z: tf.scalar(4) }]
-        ];
-        var results = util.getTensorsInContainer(container);
-        expect(results.length).toBe(4);
-    });
-    it('works with loops in container', function () {
-        var container = [tf.scalar(1), tf.scalar(2), [tf.scalar(3)]];
-        var innerContainer = [container];
-        container.push(innerContainer);
-        var results = util.getTensorsInContainer(container);
-        expect(results.length).toBe(3);
     });
 });
 //# sourceMappingURL=util_test.js.map

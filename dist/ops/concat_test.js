@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('concat1d', test_util_1.ALL_ENVS, function () {
     it('3 + 5', function () {
         var a = tf.tensor1d([3]);
@@ -37,6 +37,13 @@ jasmine_util_1.describeWithFlags('concat1d', test_util_1.ALL_ENVS, function () {
         var a = tf.tensor1d([3]);
         var result = tf.concat1d([a]);
         test_util_1.expectArraysClose(result, [3]);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [3];
+        var b = [5];
+        var result = tf.concat1d([a, b]);
+        var expected = [3, 5];
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('concat2d', test_util_1.ALL_ENVS, function () {
@@ -100,6 +107,15 @@ jasmine_util_1.describeWithFlags('concat2d', test_util_1.ALL_ENVS, function () {
         var result = tf.concat2d([a, b, c], axis);
         var expected = [1, 2, 5, 6, 9, 10, 3, 4, 7, 8, 11, 12];
         expect(result.shape).toEqual([2, 6]);
+        test_util_1.expectArraysClose(result, expected);
+    });
+    it('accepts a tensor-like object', function () {
+        var axis = 0;
+        var a = [[3]];
+        var b = [[5]];
+        var result = tf.concat2d([a, b], axis);
+        var expected = [3, 5];
+        expect(result.shape).toEqual([2, 1]);
         test_util_1.expectArraysClose(result, expected);
     });
 });
@@ -207,11 +223,25 @@ jasmine_util_1.describeWithFlags('concat3d', test_util_1.ALL_ENVS, function () {
         expect(dx2.shape).toEqual(x2.shape);
         test_util_1.expectArraysClose(dx2, [40, 400, 30, 300, 20, 200, 10, 100]);
     });
+    it('accepts a tensor-like object', function () {
+        var tensor1 = [[[1, 2, 3]]];
+        var tensor2 = [[[4, 5, 6]]];
+        var values = tf.concat3d([tensor1, tensor2], 0);
+        expect(values.shape).toEqual([2, 1, 3]);
+        test_util_1.expectArraysClose(values, [1, 2, 3, 4, 5, 6]);
+    });
 });
 jasmine_util_1.describeWithFlags('concat throws for non-tensors', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.concat([{}]); })
             .toThrowError(/Argument 'tensors\[0\]' passed to 'concat' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var tensor1 = [[[1, 2, 3, 4]]];
+        var tensor2 = [[[4, 5, 6, 7]]];
+        var values = tf.concat([tensor1, tensor2], 0);
+        expect(values.shape).toEqual([2, 1, 4]);
+        test_util_1.expectArraysClose(values, [1, 2, 3, 4, 4, 5, 6, 7]);
     });
 });
 //# sourceMappingURL=concat_test.js.map

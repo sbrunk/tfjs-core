@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var device_util = require("./device_util");
 var environment_1 = require("./environment");
+var environment_util_1 = require("./environment_util");
 var jasmine_util_1 = require("./jasmine_util");
 var backend_cpu_1 = require("./kernels/backend_cpu");
 var backend_webgl_1 = require("./kernels/backend_webgl");
@@ -35,7 +36,7 @@ jasmine_util_1.describeWithFlags('disjoint query timer enabled', test_util_1.WEB
             }
         });
         environment_1.ENV.setFeatures(features);
-        expect(environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(1);
+        expect(environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
     });
     it('webgl 2', function () {
         var features = { 'WEBGL_VERSION': 2 };
@@ -58,7 +59,7 @@ jasmine_util_1.describeWithFlags('disjoint query timer enabled', test_util_1.WEB
             }
         });
         environment_1.ENV.setFeatures(features);
-        expect(environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(2);
+        expect(environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION')).toBe(0);
     });
 });
 jasmine_util_1.describeWithFlags('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE', test_util_1.WEBGL_ENVS, function () {
@@ -86,7 +87,7 @@ jasmine_util_1.describeWithFlags('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_RELIABLE'
             .toBe(true);
     });
 });
-jasmine_util_1.describeWithFlags('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', test_util_1.WEBGL_ENVS, function () {
+jasmine_util_1.describeWithFlags('WEBGL_FENCE_API_ENABLED', test_util_1.WEBGL_ENVS, function () {
     afterEach(function () {
         environment_1.ENV.reset();
     });
@@ -103,7 +104,8 @@ jasmine_util_1.describeWithFlags('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENAB
                                 return { loseContext: function () { } };
                             }
                             return null;
-                        }
+                        },
+                        fenceSync: function () { return 1; }
                     };
                 }
                 return null;
@@ -113,14 +115,12 @@ jasmine_util_1.describeWithFlags('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENAB
     it('WebGL 2 enabled', function () {
         var features = { 'WEBGL_VERSION': 2 };
         var env = new environment_1.Environment(features);
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
+        expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(true);
     });
     it('WebGL 1 disabled', function () {
         var features = { 'WEBGL_VERSION': 1 };
         var env = new environment_1.Environment(features);
-        expect(env.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED'))
-            .toBe(false);
+        expect(env.get('WEBGL_FENCE_API_ENABLED')).toBe(false);
     });
 });
 jasmine_util_1.describeWithFlags('WebGL version', test_util_1.WEBGL_ENVS, function () {
@@ -181,15 +181,22 @@ describe('Backend', function () {
             return backend;
         });
         expect(environment_1.ENV.findBackend('custom-cpu')).toBe(backend);
+        environment_1.Environment.setBackend('custom-cpu');
+        expect(environment_1.ENV.backend).toBe(backend);
         environment_1.ENV.removeBackend('custom-cpu');
     });
     it('webgl not supported, falls back to cpu', function () {
         environment_1.ENV.setFeatures({ 'WEBGL_VERSION': 0 });
-        environment_1.ENV.registerBackend('custom-cpu', function () { return new backend_cpu_1.MathBackendCPU(); }, 103);
+        var cpuBackend;
+        environment_1.ENV.registerBackend('custom-cpu', function () {
+            cpuBackend = new backend_cpu_1.MathBackendCPU();
+            return cpuBackend;
+        }, 103);
         var success = environment_1.ENV.registerBackend('custom-webgl', function () { return new backend_webgl_1.MathBackendWebGL(); }, 104);
         expect(success).toBe(false);
         expect(environment_1.ENV.findBackend('custom-webgl') == null).toBe(true);
-        expect(environment_1.ENV.getBestBackendType()).toBe('custom-cpu');
+        expect(environment_1.Environment.getBackend()).toBe('custom-cpu');
+        expect(environment_1.ENV.backend).toBe(cpuBackend);
         environment_1.ENV.removeBackend('custom-cpu');
     });
     it('default custom background null', function () {
@@ -201,6 +208,12 @@ describe('Backend', function () {
         expect(success).toBeTruthy();
         expect(environment_1.ENV.findBackend('custom')).toEqual(backend);
         environment_1.ENV.removeBackend('custom');
+    });
+});
+describe('environment_util.getQueryParams', function () {
+    it('basic', function () {
+        expect(environment_util_1.getQueryParams('?a=1&b=hi&f=animal'))
+            .toEqual({ 'a': '1', 'b': 'hi', 'f': 'animal' });
     });
 });
 //# sourceMappingURL=environment_test.js.map

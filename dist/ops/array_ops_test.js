@@ -1,4 +1,40 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
 var jasmine_util_1 = require("../jasmine_util");
@@ -381,6 +417,11 @@ jasmine_util_1.describeWithFlags('zerosLike', test_util_1.ALL_ENVS, function () 
         expect(function () { return tf.zerosLike({}); })
             .toThrowError(/Argument 'x' passed to 'zerosLike' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var res = tf.zerosLike([[1, 2], [3, 4]]);
+        expect(res.shape).toEqual([2, 2]);
+        test_util_1.expectArraysEqual(res, [0, 0, 0, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('onesLike', test_util_1.ALL_ENVS, function () {
     it('1D default dtype', function () {
@@ -562,6 +603,11 @@ jasmine_util_1.describeWithFlags('onesLike', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.onesLike({}); })
             .toThrowError(/Argument 'x' passed to 'onesLike' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var res = tf.onesLike([[1, 2], [3, 4]]);
+        expect(res.shape).toEqual([2, 2]);
+        test_util_1.expectArraysEqual(res, [1, 1, 1, 1]);
+    });
 });
 jasmine_util_1.describeWithFlags('rand', test_util_1.ALL_ENVS, function () {
     it('should return a random 1D float32 array', function () {
@@ -672,6 +718,18 @@ jasmine_util_1.describeWithFlags('eye', test_util_1.ALL_ENVS, function () {
         test_util_1.expectArraysClose(tf.eye(2, 2, [2, 3]), tf.tensor4d([
             [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
             [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]]
+        ]));
+    });
+    it('with 3D batchShape', function () {
+        test_util_1.expectArraysClose(tf.eye(2, 2, [2, 2, 3]), tf.tensor5d([
+            [
+                [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+                [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]]
+            ],
+            [
+                [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+                [[[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]]
+            ]
         ]));
     });
     it('3x3, int32', function () {
@@ -967,7 +1025,48 @@ jasmine_util_1.describeWithFlags('randomUniform', test_util_1.ALL_ENVS, function
         test_util_1.expectValuesInRange(result, 0, 1);
     });
 });
-jasmine_util_1.describeWithFlags('fromPixels', test_util_1.WEBGL_ENVS, function () {
+var MockContext = (function () {
+    function MockContext() {
+    }
+    MockContext.prototype.getImageData = function (x, y, width, height) {
+        var data = new Uint8ClampedArray(width * height * 4);
+        for (var i = 0; i < data.length; ++i) {
+            data[i] = i + 1;
+        }
+        return { data: data };
+    };
+    return MockContext;
+}());
+var MockCanvas = (function () {
+    function MockCanvas(width, height) {
+        this.width = width;
+        this.height = height;
+    }
+    MockCanvas.prototype.getContext = function (type) {
+        return new MockContext();
+    };
+    return MockCanvas;
+}());
+jasmine_util_1.describeWithFlags('fromPixels, mock canvas', test_util_1.NODE_ENVS, function () {
+    it('accepts a canvas-like element', function () {
+        var c = new MockCanvas(2, 2);
+        var t = tf.fromPixels(c);
+        expect(t.dtype).toBe('int32');
+        expect(t.shape).toEqual([2, 2, 3]);
+        tf.test_util.expectArraysEqual(t, [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]);
+    });
+    it('accepts a canvas-like element, numChannels=4', function () {
+        var c = new MockCanvas(2, 2);
+        var t = tf.fromPixels(c, 4);
+        expect(t.dtype).toBe('int32');
+        expect(t.shape).toEqual([2, 2, 4]);
+        tf.test_util.expectArraysEqual(t, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    });
+    it('errors when passed a non-canvas object', function () {
+        expect(function () { return tf.fromPixels(5); }).toThrowError();
+    });
+});
+jasmine_util_1.describeWithFlags('fromPixels', test_util_1.BROWSER_ENVS, function () {
     it('ImageData 1x1x3', function () {
         var pixels = new ImageData(1, 1);
         pixels.data[0] = 0;
@@ -1052,6 +1151,14 @@ jasmine_util_1.describeWithFlags('fromPixels', test_util_1.WEBGL_ENVS, function 
         expect(res.shape).toEqual([1, 1, 3]);
         expect(res.dtype).toBe('float32');
         test_util_1.expectArraysClose(res, [260, 9, 11]);
+    });
+    it('throws when passed a primitive number', function () {
+        expect(function () { return tf.fromPixels(3); })
+            .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
+    });
+    it('throws when passed a string', function () {
+        expect(function () { return tf.fromPixels('test'); })
+            .toThrowError(/pixels passed to tf.fromPixels\(\) must be either/);
     });
 });
 jasmine_util_1.describeWithFlags('toPixels no canvas', test_util_1.ALL_ENVS, function () {
@@ -1159,6 +1266,21 @@ jasmine_util_1.describeWithFlags('toPixels no canvas', test_util_1.ALL_ENVS, fun
     it('throws when passed a non-tensor', function (done) {
         test_util_1.expectPromiseToFail(function () { return tf.toPixels({}); }, done);
     });
+    it('accepts a tensor-like object', function () { return __awaiter(_this, void 0, void 0, function () {
+        var x, data, expected;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    x = [[10], [20]];
+                    return [4, tf.toPixels(x)];
+                case 1:
+                    data = _a.sent();
+                    expected = new Uint8ClampedArray([10, 10, 10, 255, 20, 20, 20, 255]);
+                    expect(data).toEqual(expected);
+                    return [2];
+            }
+        });
+    }); });
 });
 jasmine_util_1.describeWithFlags('toPixels', test_util_1.WEBGL_ENVS, function () {
     it('draws a rank-2 float32 tensor, canvas', function (done) {
@@ -1269,6 +1391,25 @@ jasmine_util_1.describeWithFlags('toPixels', test_util_1.WEBGL_ENVS, function ()
             done();
         });
     });
+    it('accepts a tensor-like object', function () { return __awaiter(_this, void 0, void 0, function () {
+        var x, canvas, data, expected, ctx, imgData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    x = [[127], [100]];
+                    canvas = document.createElement('canvas');
+                    return [4, tf.toPixels(x, canvas)];
+                case 1:
+                    data = _a.sent();
+                    expected = new Uint8ClampedArray([127, 127, 127, 255, 100, 100, 100, 255]);
+                    expect(data).toEqual(expected);
+                    ctx = canvas.getContext('2d');
+                    imgData = ctx.getImageData(0, 0, 1, 2);
+                    expect(imgData.data).toEqual(expected);
+                    return [2];
+            }
+        });
+    }); });
 });
 jasmine_util_1.describeWithFlags('clone', test_util_1.ALL_ENVS, function () {
     it('1D default dtype', function () {
@@ -1544,6 +1685,11 @@ jasmine_util_1.describeWithFlags('tile', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.tile({}, [1]); })
             .toThrowError(/Argument 'x' passed to 'tile' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var res = tf.tile([1, 2, 3], [2]);
+        expect(res.shape).toEqual([6]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 1, 2, 3]);
+    });
 });
 jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
     it('1D (gather)', function () {
@@ -1606,6 +1752,11 @@ jasmine_util_1.describeWithFlags('gather', test_util_1.ALL_ENVS, function () {
     it('throws when passed indices as a non-tensor', function () {
         expect(function () { return tf.gather(tf.tensor1d([1]), {}); })
             .toThrowError(/Argument 'indices' passed to 'gather' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var res = tf.gather([1, 2, 3], [0, 2, 0, 1], 0);
+        expect(res.shape).toEqual([4]);
+        test_util_1.expectArraysClose(res, [1, 3, 1, 2]);
     });
     it('gradient 1D (gather)', function () {
         var t = tf.tensor1d([1, 2, 3]);
@@ -1759,6 +1910,11 @@ jasmine_util_1.describeWithFlags('oneHot', test_util_1.ALL_ENVS, function () {
         var indices = tf.tensor1d([0, 1], 'int32');
         var res = tf.oneHot(indices, 2);
         expect(res.dtype).toEqual(expectedType);
+    });
+    it('oneHot accepts a tensor-like object', function () {
+        var res = tf.oneHot([0, 1], 2);
+        expect(res.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(res, [1, 0, 0, 1]);
     });
 });
 jasmine_util_1.describeWithFlags('linspace', test_util_1.ALL_ENVS, function () {
@@ -2009,6 +2165,12 @@ jasmine_util_1.describeWithFlags('stack', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.stack([{}]); })
             .toThrowError(/Argument 'tensors\[0\]' passed to 'stack' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[1, 2], [3, 4]];
+        var res = tf.stack([a], 2);
+        expect(res.shape).toEqual([2, 2, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
 });
 jasmine_util_1.describeWithFlags('unstack', test_util_1.ALL_ENVS, function () {
     it('unstack by default', function () {
@@ -2127,6 +2289,21 @@ jasmine_util_1.describeWithFlags('unstack', test_util_1.ALL_ENVS, function () {
         expect(res[0].shape).toEqual([2, 2, 2]);
         test_util_1.expectArraysClose(res[0], [1, 2, 3, 4, 5, 6, 7, 8]);
     });
+    it('throws when passed a non-tensor', function () {
+        expect(function () { return tf.unstack({}); })
+            .toThrowError(/Argument 'x' passed to 'unstack' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var x = [[1, 2, 3, 4], [5, 6, 7, 8]];
+        var res = tf.unstack(x);
+        expect(res.length).toEqual(2);
+        expect(res[0].rank).toEqual(1);
+        expect(res[0].shape).toEqual([4]);
+        test_util_1.expectArraysClose(res[0], [1, 2, 3, 4]);
+        expect(res[1].rank).toEqual(1);
+        expect(res[1].shape).toEqual([4]);
+        test_util_1.expectArraysClose(res[1], [5, 6, 7, 8]);
+    });
 });
 jasmine_util_1.describeWithFlags('split', test_util_1.ALL_ENVS, function () {
     it('split by number', function () {
@@ -2163,6 +2340,15 @@ jasmine_util_1.describeWithFlags('split', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.split({}, 1); })
             .toThrowError(/Argument 'x' passed to 'split' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var x = [[1, 2, 3, 4], [5, 6, 7, 8]];
+        var res = tf.split(x, 2, 1);
+        expect(res.length).toEqual(2);
+        expect(res[0].shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(res[0], [1, 2, 5, 6]);
+        expect(res[1].shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(res[1], [3, 4, 7, 8]);
+    });
 });
 jasmine_util_1.describeWithFlags('expandDims', test_util_1.ALL_ENVS, function () {
     it('scalar, default axis is 0', function () {
@@ -2174,6 +2360,21 @@ jasmine_util_1.describeWithFlags('expandDims', test_util_1.ALL_ENVS, function ()
         var f = function () { return tf.scalar(1).expandDims(1); };
         expect(f).toThrowError();
     });
+    it('1d, axis=-3', function () {
+        expect(function () {
+            tf.tensor1d([1, 2, 3]).expandDims(-3);
+        }).toThrowError('Axis must be in the interval [-2, 1]');
+    });
+    it('1d, axis=-2', function () {
+        var res = tf.tensor1d([1, 2, 3]).expandDims(-2);
+        expect(res.shape).toEqual([1, 3]);
+        test_util_1.expectArraysClose(res, [1, 2, 3]);
+    });
+    it('1d, axis=-1', function () {
+        var res = tf.tensor1d([1, 2, 3]).expandDims(-1);
+        expect(res.shape).toEqual([3, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3]);
+    });
     it('1d, axis=0', function () {
         var res = tf.tensor1d([1, 2, 3]).expandDims(0);
         expect(res.shape).toEqual([1, 3]);
@@ -2183,6 +2384,26 @@ jasmine_util_1.describeWithFlags('expandDims', test_util_1.ALL_ENVS, function ()
         var res = tf.tensor1d([1, 2, 3]).expandDims(1);
         expect(res.shape).toEqual([3, 1]);
         test_util_1.expectArraysClose(res, [1, 2, 3]);
+    });
+    it('2d, axis=-4', function () {
+        expect(function () {
+            tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-4);
+        }).toThrowError('Axis must be in the interval [-3, 2]');
+    });
+    it('2d, axis=-3', function () {
+        var res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-3);
+        expect(res.shape).toEqual([1, 3, 2]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+    });
+    it('2d, axis=-2', function () {
+        var res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-2);
+        expect(res.shape).toEqual([3, 1, 2]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+    });
+    it('2d, axis=-1', function () {
+        var res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(-1);
+        expect(res.shape).toEqual([3, 2, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
     });
     it('2d, axis=0', function () {
         var res = tf.tensor2d([[1, 2], [3, 4], [5, 6]]).expandDims(0);
@@ -2207,6 +2428,11 @@ jasmine_util_1.describeWithFlags('expandDims', test_util_1.ALL_ENVS, function ()
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.expandDims({}); })
             .toThrowError(/Argument 'x' passed to 'expandDims' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var res = tf.expandDims(7);
+        expect(res.shape).toEqual([1]);
+        test_util_1.expectArraysClose(res, [7]);
     });
 });
 jasmine_util_1.describeWithFlags('cumsum', test_util_1.ALL_ENVS, function () {
@@ -2263,6 +2489,255 @@ jasmine_util_1.describeWithFlags('cumsum', test_util_1.ALL_ENVS, function () {
         var res = tf.tensor3d([[[0, 1], [2, 3]], [[4, 5], [6, 7]]]).cumsum(2);
         expect(res.shape).toEqual([2, 2, 2]);
         test_util_1.expectArraysClose(res, [0, 1, 2, 5, 4, 9, 6, 13]);
+    });
+    it('throws when passed a non-tensor', function () {
+        expect(function () { return tf.cumsum({}); })
+            .toThrowError(/Argument 'x' passed to 'cumsum' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var res = tf.cumsum([1, 2, 3, 4]);
+        expect(res.shape).toEqual([4]);
+        test_util_1.expectArraysClose(res, [1, 3, 6, 10]);
+    });
+});
+jasmine_util_1.describeWithFlags('batchToSpaceND', test_util_1.ALL_ENVS, function () {
+    it('tensor4d, input shape=[4, 1, 1, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([1, 2, 2, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
+    it('tensor4d, input shape=[4, 1, 1, 3], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [4, 1, 1, 3]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([1, 2, 2, 3]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    });
+    it('tensor4d, input shape=[1, 4, 4, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([1, 3, 9, 11, 2, 4, 10, 12, 5, 7, 13, 15, 6, 8, 14, 16], [4, 2, 2, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([1, 4, 4, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    });
+    it('tensor4d, input shape=[8, 1, 3, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([
+            0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12,
+            0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16
+        ], [8, 1, 3, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [2, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([2, 2, 4, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    });
+    it('tensor2d, blockShape [1]', function () {
+        var t = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+        var blockShape = [2];
+        var crops = [[0, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([1, 4]);
+        test_util_1.expectArraysClose(res, [1, 3, 2, 4]);
+    });
+    it('tensor3d,  blockSHape [1]', function () {
+        var t = tf.tensor([
+            -61, 37, -68, 72, 31, 62, 0, -13, 28, 54, 96,
+            44, -55, -64, -88, -94, 65, -32, -96, -73, -2, -77,
+            -14, 47, 33, 15, 70, 20, 75, 28, 84, -13
+        ], [8, 2, 2]);
+        var blockShape = [2];
+        var crops = [[0, 2]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([4, 2, 2]);
+        test_util_1.expectArraysClose(res, [-61, 37, 65, -32, 31, 62, -2, -77, 28, 54, 33, 15, -55, -64, 75, 28]);
+    });
+    it('tensor3d, blockShape [2]', function () {
+        var t = tf.tensor([
+            -61, 37, -68, 72, 31, 62, 0, -13, 28, 54, 96,
+            44, -55, -64, -88, -94, 65, -32, -96, -73, -2, -77,
+            -14, 47, 33, 15, 70, 20, 75, 28, 84, -13
+        ], [8, 2, 2]);
+        var blockShape = [2, 2];
+        var crops = [[2, 0], [2, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([2, 2, 2]);
+        test_util_1.expectArraysClose(res, [72, 44, -73, 20, -13, -94, 47, -13]);
+    });
+    it('throws when blockShape equal to input rank', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+        var blockShape = [2, 2, 2, 2];
+        var crops = [[0, 0], [0, 0], [0, 0], [0, 0]];
+        expect(function () { return tf.batchToSpaceND(t, blockShape, crops); })
+            .toThrowError('input rank should be > than [blockShape] but got 4');
+    });
+    it('throws when crops row dimension not equal to blockshape', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0]];
+        expect(function () { return tf.batchToSpaceND(t, blockShape, crops); })
+            .toThrowError('crops.shape[0] must be equal to [blockShape] but got 1');
+    });
+    it('throws when input tensor batch not divisible by prod(blockShape)', function () {
+        var t = tf.tensor4d([1, 2, 3, 4, 5], [5, 1, 1, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        expect(function () { return tf.batchToSpaceND(t, blockShape, crops); })
+            .toThrowError('input tensor batch must be divisible by prod( blockShape )');
+    });
+    it('accepts a tensor-like object', function () {
+        var t = [[[[1]]], [[[2]]], [[[3]]], [[[4]]]];
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var res = tf.batchToSpaceND(t, blockShape, crops);
+        expect(res.shape).toEqual([1, 2, 2, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
+});
+jasmine_util_1.describeWithFlags('spaceToBatchND', test_util_1.ALL_ENVS, function () {
+    it('tensor4d, input shape=[1, 2, 2, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([[[[1], [2]], [[3], [4]]]], [1, 2, 2, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([4, 1, 1, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
+    it('tensor4d, input shape=[1, 2, 2, 3], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([[[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]], [1, 2, 2, 3]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([4, 1, 1, 3]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    });
+    it('tensor4d, input shape=[1, 4, 4, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([[
+                [[1], [2], [3], [4]], [[5], [6], [7], [8]], [[9], [10], [11], [12]],
+                [[13], [14], [15], [16]]
+            ]], [1, 4, 4, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([4, 2, 2, 1]);
+        test_util_1.expectArraysClose(res, [1, 3, 9, 11, 2, 4, 10, 12, 5, 7, 13, 15, 6, 8, 14, 16]);
+    });
+    it('tensor4d, input shape=[2, 6, 6, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+            46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+            61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+        ], [2, 6, 6, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([8, 3, 3, 1]);
+        test_util_1.expectArraysClose(res, [
+            1, 3, 5, 13, 15, 17, 25, 27, 29, 37, 39, 41, 49, 51, 53, 61, 63, 65,
+            2, 4, 6, 14, 16, 18, 26, 28, 30, 38, 40, 42, 50, 52, 54, 62, 64, 66,
+            7, 9, 11, 19, 21, 23, 31, 33, 35, 43, 45, 47, 55, 57, 59, 67, 69, 71,
+            8, 10, 12, 20, 22, 24, 32, 34, 36, 44, 46, 48, 56, 58, 60, 68, 70, 72
+        ]);
+    });
+    it('tensor4d, input shape=[2, 2, 4, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([
+            [[[1], [2], [3], [4]], [[5], [6], [7], [8]]],
+            [[[9], [10], [11], [12]], [[13], [14], [15], [16]]]
+        ], [2, 2, 4, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [2, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([8, 1, 3, 1]);
+        test_util_1.expectArraysClose(res, [
+            0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12,
+            0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16
+        ]);
+    });
+    it('tensor2d, blockShape [1]', function () {
+        var t = tf.tensor2d([1, 3, 2, 4], [1, 4]);
+        var blockShape = [2];
+        var paddings = [[0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
+    it('throws when blockShape equal to input rank', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+        var blockShape = [2, 2, 2, 2];
+        var paddings = [[0, 0], [0, 0], [0, 0], [0, 0]];
+        expect(function () { return tf.spaceToBatchND(t, blockShape, paddings); })
+            .toThrowError('input rank should be > than [blockShape] but got 4');
+    });
+    it('throws when paddings row dimension not equal to blockshape', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [1, 2, 2, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0]];
+        expect(function () { return tf.spaceToBatchND(t, blockShape, paddings); })
+            .toThrowError('paddings.shape[0] must be equal to [blockShape], got 1');
+    });
+    it('throws when input tensor spatial dimension not divisible by \
+  blockshapes', function () {
+        var t = tf.tensor4d([1, 2, 3, 4, 5, 6], [1, 2, 3, 1]);
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        expect(function () { return tf.spaceToBatchND(t, blockShape, paddings); })
+            .toThrowError('input spatial dimensions must be divisible by blockShapes');
+    });
+    it('accepts a tensor-like object', function () {
+        var t = [[[[1], [2]], [[3], [4]]]];
+        var blockShape = [2, 2];
+        var paddings = [[0, 0], [0, 0]];
+        var res = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(res.shape).toEqual([4, 1, 1, 1]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4]);
+    });
+});
+jasmine_util_1.describeWithFlags('batchToSpaceND X spaceToBatchND', test_util_1.ALL_ENVS, function () {
+    it('tensor4d, input shape=[4, 1, 1, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([1, 2, 3, 4], [4, 1, 1, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var paddings = [[0, 0], [0, 0]];
+        var b2s = tf.batchToSpaceND(t, blockShape, crops);
+        expect(b2s.shape).toEqual([1, 2, 2, 1]);
+        test_util_1.expectArraysClose(b2s, [1, 2, 3, 4]);
+        var s2b = tf.spaceToBatchND(b2s, blockShape, paddings);
+        expect(s2b.shape).toEqual([4, 1, 1, 1]);
+        test_util_1.expectArraysClose(s2b, [1, 2, 3, 4]);
+    });
+    it('tensor4d, input shape=[2, 6, 6, 1], blockShape=[2, 2]', function () {
+        var t = tf.tensor4d([
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+            46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+            61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+        ], [2, 6, 6, 1]);
+        var blockShape = [2, 2];
+        var crops = [[0, 0], [0, 0]];
+        var paddings = [[0, 0], [0, 0]];
+        var s2b = tf.spaceToBatchND(t, blockShape, paddings);
+        expect(s2b.shape).toEqual([8, 3, 3, 1]);
+        test_util_1.expectArraysClose(s2b, [
+            1, 3, 5, 13, 15, 17, 25, 27, 29, 37, 39, 41, 49, 51, 53, 61, 63, 65,
+            2, 4, 6, 14, 16, 18, 26, 28, 30, 38, 40, 42, 50, 52, 54, 62, 64, 66,
+            7, 9, 11, 19, 21, 23, 31, 33, 35, 43, 45, 47, 55, 57, 59, 67, 69, 71,
+            8, 10, 12, 20, 22, 24, 32, 34, 36, 44, 46, 48, 56, 58, 60, 68, 70, 72
+        ]);
+        var b2s = tf.batchToSpaceND(s2b, blockShape, crops);
+        expect(b2s.shape).toEqual([2, 6, 6, 1]);
+        test_util_1.expectArraysClose(b2s, [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+            37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+            55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72
+        ]);
     });
 });
 //# sourceMappingURL=array_ops_test.js.map

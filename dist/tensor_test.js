@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -249,6 +249,11 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
         var a = tf.tensor1d([1, 2, 3]);
         test_util_1.expectArraysClose(a, [1, 2, 3]);
     });
+    it('tf.tensor1d() throw error with null input value', function () {
+        expect(function () { return tf.tensor1d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+    });
     it('tf.tensor1d() from number[][], shape mismatch', function () {
         expect(function () { return tf.tensor1d([[1], [2], [3]]); }).toThrowError();
     });
@@ -266,6 +271,11 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
     it('tf.tensor2d() from number[], but no shape throws error', function () {
         expect(function () { return tf.tensor2d([1, 2, 3, 4]); }).toThrowError();
     });
+    it('tf.tensor2d() throw error with null input value', function () {
+        expect(function () { return tf.tensor2d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+    });
     it('tensor3d() from number[][][]', function () {
         var a = tf.tensor3d([[[1], [2], [3]], [[4], [5], [6]]], [2, 3, 1]);
         test_util_1.expectArraysClose(a, [1, 2, 3, 4, 5, 6]);
@@ -280,6 +290,11 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
     it('tf.tensor3d() requires shape to be of length 3', function () {
         var shape = [4, 1];
         expect(function () { return tf.tensor3d([1, 2, 3, 4], shape); }).toThrowError();
+    });
+    it('tf.tensor3d() throw error with null input value', function () {
+        expect(function () { return tf.tensor3d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
     });
     it('tensor4d() from number[][][][]', function () {
         var a = tf.tensor4d([[[[1]], [[2]]], [[[4]], [[5]]]], [2, 2, 1, 1]);
@@ -297,6 +312,21 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
     it('tf.tensor4d() requires shape to be of length 4', function () {
         var shape = [4, 1];
         expect(function () { return tf.tensor4d([1, 2, 3, 4], shape); }).toThrowError();
+    });
+    it('tf.tensor4d() throw error with null input value', function () {
+        expect(function () { return tf.tensor4d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+    });
+    it('tf.tensor5d() throw error with null input value', function () {
+        expect(function () { return tf.tensor5d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
+    });
+    it('tf.tensor6d() throw error with null input value', function () {
+        expect(function () { return tf.tensor6d(null); })
+            .toThrowError('The input to the tensor constructor ' +
+            'must be a non-null value.');
     });
     it('default dtype', function () {
         var a = tf.scalar(3);
@@ -643,6 +673,12 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.reshape({}, []); })
             .toThrowError(/Argument 'x' passed to 'reshape' must be a Tensor/);
     });
+    it('reshape accepts a tensor-like object', function () {
+        var res = tf.reshape([[1, 2, 3], [4, 5, 6]], [3, 2]);
+        expect(res.dtype).toBe('float32');
+        expect(res.shape).toEqual([3, 2]);
+        test_util_1.expectArraysClose(res, [1, 2, 3, 4, 5, 6]);
+    });
     it('cast bool -> bool', function () {
         var a = tf.tensor1d([1, 0], 'bool');
         expect(a.cast('bool').dtype).toEqual('bool');
@@ -682,6 +718,12 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
     it('cast throws when passed a non-tensor', function () {
         expect(function () { return tf.cast({}, 'float32'); })
             .toThrowError(/Argument 'x' passed to 'cast' must be a Tensor/);
+    });
+    it('cast accepts a tensor-like object', function () {
+        var a = [1.0, 2.0];
+        var res = tf.cast(a, 'int32');
+        expect(res.dtype).toEqual('int32');
+        test_util_1.expectArraysClose(res, [1, 2]);
     });
     it('scalar bool -> int32', function () {
         var a = tf.scalar(true, 'bool').toInt();
@@ -746,6 +788,11 @@ jasmine_util_1.describeWithFlags('tensor', test_util_1.ALL_ENVS, function () {
     it('squeeze throws when passed a non-tensor', function () {
         expect(function () { return tf.squeeze({}); })
             .toThrowError(/Argument 'x' passed to 'squeeze' must be a Tensor/);
+    });
+    it('squeeze accepts a tensor-like object', function () {
+        var res = tf.squeeze([[[4]], [[2]], [[1]]]);
+        expect(res.shape).toEqual([3]);
+        test_util_1.expectArraysClose(res, [4, 2, 1]);
     });
     it('scalar -> 2d', function () {
         var a = tf.scalar(4, 'int32');
@@ -938,6 +985,27 @@ jasmine_util_1.describeWithFlags('tensor grad', test_util_1.ALL_ENVS, function (
     });
 });
 jasmine_util_1.describeWithFlags('tensor.data', test_util_1.ALL_ENVS, function () {
+    it('interleaving .data() and .dataSync()', function () { return __awaiter(_this, void 0, void 0, function () {
+        var a, b, ra, rb, _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    a = tf.tensor1d([1, 2, 3]);
+                    b = tf.tensor1d([4, 5, 6]);
+                    ra = a.square().data();
+                    rb = b.square().dataSync();
+                    test_util_1.expectArraysClose(a, [1, 2, 3]);
+                    test_util_1.expectArraysClose(b, [4, 5, 6]);
+                    test_util_1.expectArraysClose(Array.from(rb), [16, 25, 36]);
+                    _a = test_util_1.expectArraysClose;
+                    _c = (_b = Array).from;
+                    return [4, ra];
+                case 1:
+                    _a.apply(void 0, [_c.apply(_b, [_d.sent()]), [1, 4, 9]]);
+                    return [2];
+            }
+        });
+    }); });
     it('.data() postpones disposal of tensor', function (done) {
         expect(tf.memory().numTensors).toBe(0);
         tf.tidy(function () {
@@ -966,6 +1034,24 @@ jasmine_util_1.describeWithFlags('tensor.data', test_util_1.ALL_ENVS, function (
             })
                 .then(done);
         });
+    });
+});
+jasmine_util_1.describeWithFlags('x instanceof Tensor', test_util_1.ALL_ENVS, function () {
+    it('x: Tensor', function () {
+        var t = tf.scalar(1);
+        expect(t instanceof tensor_1.Tensor).toBe(true);
+    });
+    it('x: Tensor-like', function () {
+        var t = { shape: [2], dtype: 'float32' };
+        expect(t instanceof tensor_1.Tensor).toBe(true);
+    });
+    it('x: other object, fails', function () {
+        var t = { something: 'else' };
+        expect(t instanceof tensor_1.Tensor).toBe(false);
+    });
+    it('x: undefined or null, fails', function () {
+        expect(undefined instanceof tensor_1.Tensor).toBe(false);
+        expect(null instanceof tensor_1.Tensor).toBe(false);
     });
 });
 //# sourceMappingURL=tensor_test.js.map

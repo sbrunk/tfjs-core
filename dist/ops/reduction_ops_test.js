@@ -52,6 +52,9 @@ jasmine_util_1.describeWithFlags('Reduction: min', test_util_1.ALL_ENVS, functio
         expect(function () { return tf.min({}); })
             .toThrowError(/Argument 'x' passed to 'min' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        test_util_1.expectNumbersClose(tf.min([3, -1, 0, 100, -7, 2]).get(), -7);
+    });
 });
 jasmine_util_1.describeWithFlags('Reduction: max', test_util_1.ALL_ENVS, function () {
     it('with one element dominating', function () {
@@ -115,6 +118,10 @@ jasmine_util_1.describeWithFlags('Reduction: max', test_util_1.ALL_ENVS, functio
         expect(function () { return tf.max({}); })
             .toThrowError(/Argument 'x' passed to 'max' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.max([3, -1, 0, 100, -7, 2]);
+        test_util_1.expectNumbersClose(r.get(), 100);
+    });
 });
 jasmine_util_1.describeWithFlags('Reduction: argmax', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
@@ -173,6 +180,11 @@ jasmine_util_1.describeWithFlags('Reduction: argmax', test_util_1.ALL_ENVS, func
         expect(function () { return tf.argMax({}); })
             .toThrowError(/Argument 'x' passed to 'argMax' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.argMax([1, 0, 3, 2]);
+        expect(result.dtype).toBe('int32');
+        expect(result.get()).toBe(2);
+    });
 });
 jasmine_util_1.describeWithFlags('Reduction: argmin', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
@@ -225,6 +237,10 @@ jasmine_util_1.describeWithFlags('Reduction: argmin', test_util_1.ALL_ENVS, func
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.argMin({}); })
             .toThrowError(/Argument 'x' passed to 'argMin' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.argMin([1, 0, 3, 2]);
+        expect(result.get()).toBe(1);
     });
 });
 jasmine_util_1.describeWithFlags('Reduction: logSumExp', test_util_1.ALL_ENVS, function () {
@@ -306,6 +322,10 @@ jasmine_util_1.describeWithFlags('Reduction: logSumExp', test_util_1.ALL_ENVS, f
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.logSumExp({}); })
             .toThrowError(/Argument 'x' passed to 'logSumExp' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.logSumExp([1, 2, -3]);
+        test_util_1.expectNumbersClose(result.get(), Math.log(Math.exp(1) + Math.exp(2) + Math.exp(-3)));
     });
 });
 jasmine_util_1.describeWithFlags('Reduction: sum', test_util_1.ALL_ENVS, function () {
@@ -406,6 +426,10 @@ jasmine_util_1.describeWithFlags('Reduction: sum', test_util_1.ALL_ENVS, functio
         expect(function () { return tf.sum({}); })
             .toThrowError(/Argument 'x' passed to 'sum' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.sum([[1, 2], [3, 0], [0, 1]]);
+        test_util_1.expectNumbersClose(result.get(), 7);
+    });
 });
 jasmine_util_1.describeWithFlags('Reduction: mean', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -499,6 +523,11 @@ jasmine_util_1.describeWithFlags('Reduction: mean', test_util_1.ALL_ENVS, functi
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.mean({}); })
             .toThrowError(/Argument 'x' passed to 'mean' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.mean([[1, 2, 3], [0, 0, 1]]);
+        expect(r.dtype).toBe('float32');
+        test_util_1.expectNumbersClose(r.get(), 7 / 6);
     });
 });
 jasmine_util_1.describeWithFlags('Reduction: moments', test_util_1.ALL_ENVS, function () {
@@ -597,6 +626,13 @@ jasmine_util_1.describeWithFlags('Reduction: moments', test_util_1.ALL_ENVS, fun
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.moments({}); })
             .toThrowError(/Argument 'x' passed to 'moments' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var _a = tf.moments([1, 2, 3, 0, 0, 1]), mean = _a.mean, variance = _a.variance;
+        expect(mean.dtype).toBe('float32');
+        expect(variance.dtype).toBe('float32');
+        test_util_1.expectNumbersClose(mean.get(), 7 / 6);
+        test_util_1.expectNumbersClose(variance.get(), 1.1389);
     });
 });
 jasmine_util_1.describeWithFlags('Reduction: norm', test_util_1.ALL_ENVS, function () {
@@ -795,6 +831,11 @@ jasmine_util_1.describeWithFlags('Reduction: norm', test_util_1.ALL_ENVS, functi
         expect(function () { return tf.norm({}); })
             .toThrowError(/Argument 'x' passed to 'norm' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var norm = tf.norm([1, -2, 3, -4], 1);
+        expect(norm.dtype).toBe('float32');
+        test_util_1.expectNumbersClose(norm.get(), 10);
+    });
 });
 jasmine_util_1.describeWithFlags('Reduction: all', test_util_1.ALL_ENVS, function () {
     it('Tensor1D', function () {
@@ -849,11 +890,79 @@ jasmine_util_1.describeWithFlags('Reduction: all', test_util_1.ALL_ENVS, functio
     });
     it('throws when dtype is not boolean', function () {
         var a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
-        expect(function () { return tf.all(a); }).toThrowError(/Error Array must be of type bool/);
+        expect(function () { return tf.all(a); }).toThrowError(/Error Tensor must be of type bool/);
     });
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.all({}); })
             .toThrowError(/Argument 'x' passed to 'all' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [0, 0, 0];
+        test_util_1.expectNumbersClose(tf.all(a).get(), 0);
+    });
+});
+jasmine_util_1.describeWithFlags('Reduction: any', test_util_1.ALL_ENVS, function () {
+    it('Tensor1D', function () {
+        var a = tf.tensor1d([0, 0, 0], 'bool');
+        test_util_1.expectNumbersClose(tf.any(a).get(), 0);
+        a = tf.tensor1d([1, 0, 1], 'bool');
+        test_util_1.expectNumbersClose(tf.any(a).get(), 1);
+        a = tf.tensor1d([1, 1, 1], 'bool');
+        test_util_1.expectNumbersClose(tf.any(a).get(), 1);
+    });
+    it('ignores NaNs', function () {
+        var a = tf.tensor1d([1, NaN, 0], 'bool');
+        expect(tf.any(a).get()).toEqual(1);
+    });
+    it('2D', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+        test_util_1.expectNumbersClose(tf.any(a).get(), 1);
+    });
+    it('2D axis=[0,1]', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        test_util_1.expectNumbersClose(tf.any(a, [0, 1]).get(), 1);
+    });
+    it('2D, axis=0', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2], 'bool');
+        var r = tf.any(a, 0);
+        expect(r.shape).toEqual([2]);
+        test_util_1.expectArraysClose(r, [1, 1]);
+        r = tf.any(a, 1);
+        expect(r.shape).toEqual([2]);
+        test_util_1.expectArraysClose(r, [1, 0]);
+    });
+    it('2D, axis=0, keepDims', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = a.any(0, true);
+        expect(r.shape).toEqual([1, 3]);
+        test_util_1.expectArraysClose(r, [1, 1, 0]);
+    });
+    it('2D, axis=1 provided as a number', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.any(a, 1);
+        test_util_1.expectArraysClose(r, [1, 1]);
+    });
+    it('2D, axis = -1 provided as a number', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.any(a, -1);
+        test_util_1.expectArraysClose(r, [1, 1]);
+    });
+    it('2D, axis=[1]', function () {
+        var a = tf.tensor2d([1, 1, 0, 0, 1, 0], [2, 3], 'bool');
+        var r = tf.any(a, [1]);
+        test_util_1.expectArraysClose(r, [1, 1]);
+    });
+    it('throws when dtype is not boolean', function () {
+        var a = tf.tensor2d([1, 1, 0, 0], [2, 2]);
+        expect(function () { return tf.any(a); }).toThrowError(/Error Tensor must be of type bool/);
+    });
+    it('throws when passed a non-tensor', function () {
+        expect(function () { return tf.any({}); })
+            .toThrowError(/Argument 'x' passed to 'any' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [0, 0, 0];
+        test_util_1.expectNumbersClose(tf.any(a).get(), 0);
     });
 });
 //# sourceMappingURL=reduction_ops_test.js.map

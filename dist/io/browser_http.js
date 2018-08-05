@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -35,7 +35,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var environment_1 = require("../environment");
 var util_1 = require("../util");
 var io_utils_1 = require("./io_utils");
 var router_registry_1 = require("./router_registry");
@@ -43,8 +42,8 @@ var weights_loader_1 = require("./weights_loader");
 var BrowserHTTPRequest = (function () {
     function BrowserHTTPRequest(path, requestInit) {
         this.DEFAULT_METHOD = 'POST';
-        if (!environment_1.ENV.get('IS_BROWSER')) {
-            throw new Error('browserHTTPRequest is not supported outside the web browser.');
+        if (typeof fetch === 'undefined') {
+            throw new Error('browserHTTPRequest is not supported outside the web browser without a fetch polyfill.');
         }
         util_1.assert(path != null && path.length > 0, 'URL path for browserHTTPRequest must not be null, undefined or ' +
             'empty.');
@@ -98,7 +97,7 @@ var BrowserHTTPRequest = (function () {
     };
     BrowserHTTPRequest.prototype.load = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var modelConfigRequest, modelConfig, modelTopology, weightsManifest, weightSpecs, weightData, weightsManifest_1, _i, weightsManifest_2, entry, pathPrefix_1, fetchURLs_1, _a;
+            var modelConfigRequest, modelConfig, modelTopology, weightsManifest, weightSpecs, weightData, weightsManifest_2, _i, weightsManifest_1, entry, pathPrefix_1, fetchURLs_1, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4, fetch(this.path, this.requestInit)];
@@ -114,10 +113,10 @@ var BrowserHTTPRequest = (function () {
                                 "topology or manifest for weights.");
                         }
                         if (!(weightsManifest != null)) return [3, 4];
-                        weightsManifest_1 = modelConfig['weightsManifest'];
+                        weightsManifest_2 = modelConfig['weightsManifest'];
                         weightSpecs = [];
-                        for (_i = 0, weightsManifest_2 = weightsManifest_1; _i < weightsManifest_2.length; _i++) {
-                            entry = weightsManifest_2[_i];
+                        for (_i = 0, weightsManifest_1 = weightsManifest_2; _i < weightsManifest_1.length; _i++) {
+                            entry = weightsManifest_1[_i];
                             weightSpecs.push.apply(weightSpecs, entry.weights);
                         }
                         pathPrefix_1 = this.path.substring(0, this.path.lastIndexOf('/'));
@@ -125,7 +124,7 @@ var BrowserHTTPRequest = (function () {
                             pathPrefix_1 = pathPrefix_1 + '/';
                         }
                         fetchURLs_1 = [];
-                        weightsManifest_1.forEach(function (weightsGroup) {
+                        weightsManifest_2.forEach(function (weightsGroup) {
                             weightsGroup.paths.forEach(function (path) {
                                 fetchURLs_1.push(pathPrefix_1 + path);
                             });
@@ -145,7 +144,7 @@ var BrowserHTTPRequest = (function () {
 }());
 exports.BrowserHTTPRequest = BrowserHTTPRequest;
 exports.httpRequestRouter = function (url) {
-    if (!environment_1.ENV.get('IS_BROWSER')) {
+    if (typeof fetch === 'undefined') {
         return null;
     }
     else {

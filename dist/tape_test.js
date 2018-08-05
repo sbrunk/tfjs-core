@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("./index");
+var jasmine_util_1 = require("./jasmine_util");
 var tape_util = require("./tape");
 var test_util_1 = require("./test_util");
-var jasmine_util_1 = require("./jasmine_util");
-jasmine_util_1.describeWithFlags('getFilteredNodesXToY', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('getFilteredNodesXToY', test_util_1.ALL_ENVS, function () {
     it('getFilteredNodesXToY no paths from x to y', function () {
         var x = tf.scalar(1);
         var intermediate1 = tf.scalar(0);
@@ -129,7 +129,7 @@ jasmine_util_1.describeWithFlags('getFilteredNodesXToY', test_util_1.CPU_ENVS, f
             .toEqual({ id: 0, name: 'node0', inputs: { x: x }, output: y, gradient: null });
     });
 });
-jasmine_util_1.describeWithFlags('backpropagateGradients', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('backpropagateGradients', test_util_1.ALL_ENVS, function () {
     it('Throws if gradient is not defined', function () {
         var x = tf.scalar(0);
         var y = tf.scalar(1);

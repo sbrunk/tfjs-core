@@ -194,6 +194,11 @@ jasmine_util_1.describeWithFlags('div', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.div(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'div' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.div([[1, 2, 3], [4, 5, 6]], 2);
+        expect(r.shape).toEqual([2, 3]);
+        test_util_1.expectArraysClose(r, [1 / 2, 2 / 2, 3 / 2, 4 / 2, 5 / 2, 6 / 2]);
+    });
 });
 jasmine_util_1.describeWithFlags('mul', test_util_1.ALL_ENVS, function () {
     it('strict same-shaped tensors', function () {
@@ -361,6 +366,11 @@ jasmine_util_1.describeWithFlags('mul', test_util_1.ALL_ENVS, function () {
     it('throws when passed b as a non-tensor', function () {
         expect(function () { return tf.mul(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'mul' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.mul([[1, 2], [-3, -4]], 2);
+        expect(result.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(result, [2, 4, -6, -8]);
     });
 });
 jasmine_util_1.describeWithFlags('pow', test_util_1.ALL_ENVS, function () {
@@ -544,6 +554,26 @@ jasmine_util_1.describeWithFlags('pow', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.pow(tf.scalar(1), {}); })
             .toThrowError(/Argument 'exp' passed to 'pow' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.pow([1, 2, 3], 2);
+        expect(result.shape).toEqual([3]);
+        expect(result.dtype).toBe('float32');
+        test_util_1.expectArraysEqual(result, [1, 4, 9]);
+    });
+    it('negative base and whole exponent not NaN', function () {
+        var a = tf.tensor1d([-2, -3, -4], 'float32');
+        var b = tf.tensor1d([2, -3, 4], 'float32');
+        var expected = [Math.pow(-2, 2), Math.pow(-3, -3), Math.pow(-4, 4)];
+        var result = tf.pow(a, b);
+        test_util_1.expectArraysClose(result, expected);
+    });
+    it('negative base and fract exponent NaN', function () {
+        var a = tf.tensor1d([-2, -3, -4], 'float32');
+        var b = tf.tensor1d([2.1, -3.01, 4.001], 'float32');
+        var expected = [NaN, NaN, NaN];
+        var result = tf.pow(a, b);
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('add', test_util_1.ALL_ENVS, function () {
     it('c + A', function () {
@@ -687,6 +717,63 @@ jasmine_util_1.describeWithFlags('add', test_util_1.ALL_ENVS, function () {
     it('throws when passed b as a non-tensor', function () {
         expect(function () { return tf.add(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'add' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.add(5, [1, 2, 3]);
+        test_util_1.expectArraysClose(result, [6, 7, 8]);
+    });
+});
+jasmine_util_1.describeWithFlags('addN', test_util_1.ALL_ENVS, function () {
+    it('a single tensor', function () {
+        var res = tf.addN([tf.tensor1d([1, 2, 3])]);
+        test_util_1.expectArraysClose(res, [1, 2, 3]);
+    });
+    it('two tensors, int32', function () {
+        var res = tf.addN([
+            tf.tensor1d([1, 2, -1], 'int32'),
+            tf.tensor1d([5, 3, 2], 'int32'),
+        ]);
+        test_util_1.expectArraysClose(res, [6, 5, 1]);
+        expect(res.dtype).toBe('int32');
+        expect(res.shape).toEqual([3]);
+    });
+    it('three tensors', function () {
+        var res = tf.addN([
+            tf.tensor1d([1, 2]),
+            tf.tensor1d([5, 3]),
+            tf.tensor1d([-5, -2]),
+        ]);
+        test_util_1.expectArraysClose(res, [1, 3]);
+        expect(res.dtype).toBe('float32');
+        expect(res.shape).toEqual([2]);
+    });
+    it('accepts a tensor-like object', function () {
+        var res = tf.addN([[1, 2], [3, 4]]);
+        test_util_1.expectArraysClose(res, [4, 6]);
+        expect(res.dtype).toBe('float32');
+        expect(res.shape).toEqual([2]);
+    });
+    it('list of numbers gets treated as a list of scalars', function () {
+        var res = tf.addN([1, 2, 3, 4]);
+        test_util_1.expectArraysClose(res, [10]);
+        expect(res.dtype).toBe('float32');
+        expect(res.shape).toEqual([]);
+    });
+    it('errors if list is empty', function () {
+        expect(function () { return tf.addN([]); })
+            .toThrowError(/Must pass at least one tensor to tf.addN\(\), but got 0/);
+    });
+    it('errors if argument is not an array', function () {
+        expect(function () { return tf.addN(tf.scalar(3)); })
+            .toThrowError(/The param passed to tf.addN\(\) must be a list of tensors/);
+    });
+    it('errors if arguments not of same dtype', function () {
+        expect(function () { return tf.addN([tf.scalar(1, 'int32'), tf.scalar(2, 'float32')]); })
+            .toThrowError(/All tensors passed to tf.addN\(\) must have the same dtype/);
+    });
+    it('errors if arguments not of same shape', function () {
+        expect(function () { return tf.addN([tf.scalar(1), tf.tensor1d([2])]); })
+            .toThrowError(/All tensors passed to tf.addN\(\) must have the same shape/);
     });
 });
 jasmine_util_1.describeWithFlags('sub', test_util_1.ALL_ENVS, function () {
@@ -850,6 +937,10 @@ jasmine_util_1.describeWithFlags('sub', test_util_1.ALL_ENVS, function () {
     it('throws when passed b as a non-tensor', function () {
         expect(function () { return tf.sub(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'sub' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.sub(5, [7, 2, 3]);
+        test_util_1.expectArraysClose(result, [-2, 3, 2]);
     });
 });
 //# sourceMappingURL=arithmetic_test.js.map

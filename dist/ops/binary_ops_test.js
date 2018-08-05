@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('prelu', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
         var x = tf.tensor1d([0, 1, -2, -4]);
@@ -140,6 +140,13 @@ jasmine_util_1.describeWithFlags('maximum', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.maximum(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'maximum' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[0.5, 3], [-0.1, -4]];
+        var b = [[0.2, 0.4], [0.25, 0.15]];
+        var result = tf.maximum(a, b);
+        expect(result.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(result, [0.5, 3, 0.25, 0.15]);
+    });
 });
 jasmine_util_1.describeWithFlags('squaredDifference', test_util_1.ALL_ENVS, function () {
     it('float32 and float32', function () {
@@ -274,6 +281,16 @@ jasmine_util_1.describeWithFlags('squaredDifference', test_util_1.ALL_ENVS, func
         expect(function () { return tf.squaredDifference(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'squaredDifference' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[0.5, 3], [-0.1, -4]];
+        var b = 0.6;
+        var result = tf.squaredDifference(a, b);
+        expect(result.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(result, [
+            Math.pow(0.5 - 0.6, 2), Math.pow(3 - 0.6, 2), Math.pow(-0.1 - 0.6, 2),
+            Math.pow(-4 - 0.6, 2)
+        ]);
+    });
 });
 jasmine_util_1.describeWithFlags('minimum', test_util_1.ALL_ENVS, function () {
     it('float32 and float32', function () {
@@ -385,6 +402,13 @@ jasmine_util_1.describeWithFlags('minimum', test_util_1.ALL_ENVS, function () {
     it('throws when passed b as a non-tensor', function () {
         expect(function () { return tf.minimum(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'minimum' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [[0.5, 3], [-0.1, -4]];
+        var b = [[0.2, 0.4], [0.25, 0.15]];
+        var result = tf.minimum(a, b);
+        expect(result.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(result, [0.2, 0.4, -0.1, -4]);
     });
 });
 jasmine_util_1.describeWithFlags('mod', test_util_1.ALL_ENVS, function () {
@@ -527,6 +551,13 @@ jasmine_util_1.describeWithFlags('mod', test_util_1.ALL_ENVS, function () {
     it('throws when passed b as a non-tensor', function () {
         expect(function () { return tf.mod(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'mod' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [[0.5, 3], [-0.1, -4]];
+        var b = [[0.2, 0.4], [0.25, 0.15]];
+        var result = tf.mod(a, b);
+        expect(result.shape).toEqual([2, 2]);
+        test_util_1.expectArraysClose(result, [0.1, 0.2, 0.15, 0.05]);
     });
 });
 jasmine_util_1.describeWithFlags('atan2', test_util_1.ALL_ENVS, function () {
@@ -676,6 +707,16 @@ jasmine_util_1.describeWithFlags('atan2', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.atan2(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'atan2' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[1, 2, 3], [4, 5, 6]];
+        var c = 2;
+        var r = tf.atan2(a, c);
+        var expected = [];
+        for (var i = 0; i < 6; i++) {
+            expected[i] = Math.atan2(i + 1, 2);
+        }
+        test_util_1.expectArraysClose(r, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('div', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -683,8 +724,7 @@ jasmine_util_1.describeWithFlags('div', test_util_1.ALL_ENVS, function () {
         var b = tf.tensor1d([0.15, 0.2, 0.25, 0.5, 0.7, 1.2]);
         var result = tf.div(a, b);
         expect(result.shape).toEqual(a.shape);
-        test_util_1.expectArraysClose(result, [0, 5.0, -8.0, -8.0,
-            5.714285850524902, -3.3333332538604736]);
+        test_util_1.expectArraysClose(result, [0, 5.0, -8.0, -8.0, 5.714285850524902, -3.3333332538604736]);
     });
     it('floored internally', function () {
         var a = tf.tensor1d([10, 20, -20, -40], 'int32');

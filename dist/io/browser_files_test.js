@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -90,7 +90,7 @@ var artifacts1 = {
     weightSpecs: weightSpecs1,
     weightData: weightData1,
 };
-jasmine_util_1.describeWithFlags('browserDownloads', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('browserDownloads', test_util_1.BROWSER_ENVS, function () {
     var FakeHTMLAnchorElement = (function () {
         function FakeHTMLAnchorElement() {
             this.clicked = 0;
@@ -336,7 +336,7 @@ jasmine_util_1.describeWithFlags('browserDownloads', test_util_1.CPU_ENVS, funct
         expect(browser_files_1.browserDownloadsRouter('foo')).toBeNull();
     });
 });
-jasmine_util_1.describeWithFlags('browserFiles', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('browserFiles', test_util_1.BROWSER_ENVS, function () {
     var weightsBlob = new Blob([weightData1], { type: 'application/octet-stream' });
     var weightsFile = new File([weightsBlob], 'model.weights.bin', { type: 'application/octet-stream' });
     it('One group, one path', function (done) {

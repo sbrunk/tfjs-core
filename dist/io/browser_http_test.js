@@ -36,7 +36,79 @@ var modelTopology1 = {
         }],
     'backend': 'tensorflow'
 };
-jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('browserHTTPRequest-load fetch-polyfill', test_util_1.NODE_ENVS, function () {
+    var requestInits;
+    beforeEach(function () {
+        global.fetch = function () { };
+        requestInits = [];
+    });
+    afterAll(function () {
+        delete global.fetch;
+    });
+    var fakeResponse = function (body) { return ({
+        json: function () {
+            return Promise.resolve(JSON.parse(body));
+        },
+        arrayBuffer: function () {
+            var buf = body.buffer ?
+                body.buffer :
+                body;
+            return Promise.resolve(buf);
+        }
+    }); };
+    var setupFakeWeightFiles = function (fileBufferMap) {
+        spyOn(global, 'fetch')
+            .and.callFake(function (path, init) {
+            requestInits.push(init);
+            return fakeResponse(fileBufferMap[path]);
+        });
+    };
+    it('1 group, 2 weights, 1 path', function (done) {
+        var weightManifest1 = [{
+                paths: ['weightfile0'],
+                weights: [
+                    {
+                        name: 'dense/kernel',
+                        shape: [3, 1],
+                        dtype: 'float32',
+                    },
+                    {
+                        name: 'dense/bias',
+                        shape: [2],
+                        dtype: 'float32',
+                    }
+                ]
+            }];
+        var floatData = new Float32Array([1, 3, 3, 7, 4]);
+        setupFakeWeightFiles({
+            './model.json': JSON.stringify({ modelTopology: modelTopology1, weightsManifest: weightManifest1 }),
+            './weightfile0': floatData,
+        });
+        var handler = tf.io.browserHTTPRequest('./model.json');
+        handler.load()
+            .then(function (modelArtifacts) {
+            expect(modelArtifacts.modelTopology).toEqual(modelTopology1);
+            expect(modelArtifacts.weightSpecs)
+                .toEqual(weightManifest1[0].weights);
+            expect(new Float32Array(modelArtifacts.weightData))
+                .toEqual(floatData);
+            expect(requestInits).toEqual([{}, {}]);
+            done();
+        })
+            .catch(function (err) { return done.fail(err.stack); });
+    });
+    it('throw exception if no fetch polyfill', function () {
+        delete global.fetch;
+        try {
+            tf.io.browserHTTPRequest('./model.json');
+        }
+        catch (err) {
+            expect(err.message)
+                .toMatch(/not supported outside the web browser without a fetch polyfill/);
+        }
+    });
+});
+jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_ENVS, function () {
     var weightSpecs1 = [
         {
             name: 'dense/kernel',
@@ -101,12 +173,12 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_C
                     done();
                 };
                 weightsFileReader.onerror = function (error) {
-                    done.fail(error.message);
+                    done.fail(error.target.error.message);
                 };
                 weightsFileReader.readAsArrayBuffer(weightsFile);
             };
             jsonFileReader.onerror = function (error) {
-                done.fail(error.message);
+                done.fail(error.target.error.message);
             };
             jsonFileReader.readAsText(jsonFile);
         })
@@ -139,7 +211,7 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_C
                 done();
             };
             jsonFileReader.onerror = function (error) {
-                done.fail(error.message);
+                done.fail(error.target.error.message);
             };
             jsonFileReader.readAsText(jsonFile);
         })
@@ -190,12 +262,12 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_C
                     done();
                 };
                 weightsFileReader.onerror = function (error) {
-                    done.fail(error.message);
+                    done.fail(error.target.error.message);
                 };
                 weightsFileReader.readAsArrayBuffer(weightsFile);
             };
             jsonFileReader.onerror = function (error) {
-                done.fail(error.message);
+                done.fail(error.target.error.message);
             };
             jsonFileReader.readAsText(jsonFile);
         })
@@ -237,7 +309,7 @@ jasmine_util_1.describeWithFlags('browserHTTPRequest-save', test_util_1.CHROME_C
         expect(browser_http_1.httpRequestRouter('foo:5000/bar')).toBeNull();
     });
 });
-jasmine_util_1.describeWithFlags('browserHTTPRequest-load', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('browserHTTPRequest-load', test_util_1.BROWSER_ENVS, function () {
     var requestInits;
     var setupFakeWeightFiles = function (fileBufferMap) {
         spyOn(window, 'fetch').and.callFake(function (path, init) {

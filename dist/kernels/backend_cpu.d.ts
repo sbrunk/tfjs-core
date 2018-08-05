@@ -1,7 +1,6 @@
 import { Conv2DInfo } from '../ops/conv_util';
 import { DataId, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D } from '../tensor';
-import * as types from '../types';
-import { DataType, TypedArray } from '../types';
+import { DataType, Rank, ShapeMap, TypedArray } from '../types';
 import { BackendTimingInfo, KernelBackend } from './backend';
 export declare class MathBackendCPU implements KernelBackend {
     private data;
@@ -18,13 +17,14 @@ export declare class MathBackendCPU implements KernelBackend {
     memory(): {
         unreliable: boolean;
     };
-    private throwIfNoData(dataId);
+    private throwIfNoData;
     slice<T extends Tensor>(x: T, begin: number[], size: number[]): T;
     stridedSlice<T extends Tensor>(x: T, begin: number[], end: number[], strides: number[], beginMask: number, endMask: number): T;
     reverse<T extends Tensor>(x: T, axis: number[]): T;
     concat(a: Tensor2D, b: Tensor2D): Tensor2D;
     neg<T extends Tensor>(x: T): T;
     add(a: Tensor, b: Tensor): Tensor;
+    addN<T extends Tensor>(tensors: T[]): T;
     subtract(a: Tensor, b: Tensor): Tensor;
     pow<T extends Tensor>(a: T, b: Tensor): T;
     matMul(a: Tensor2D, b: Tensor2D, transposeA: boolean, transposeB: boolean): Tensor2D;
@@ -45,16 +45,16 @@ export declare class MathBackendCPU implements KernelBackend {
     logicalNot<T extends Tensor>(x: T): T;
     logicalAnd(a: Tensor, b: Tensor): Tensor;
     logicalOr(a: Tensor, b: Tensor): Tensor;
-    where(condition: Tensor, a: Tensor, b: Tensor, dtype: DataType): Tensor;
-    topKValues<T extends Tensor>(x: T, k: number): Tensor1D;
-    topKIndices(x: Tensor, k: number): Tensor1D;
-    private topK<T>(x, k);
+    select(condition: Tensor, a: Tensor, b: Tensor): Tensor;
+    where(condition: Tensor): Tensor2D;
+    topk<T extends Tensor>(x: T, k: number, sorted: boolean): [T, T];
     min(x: Tensor, axes: number[]): Tensor;
     minimum(a: Tensor, b: Tensor): Tensor;
     mod(a: Tensor, b: Tensor): Tensor;
     max(x: Tensor, axes: number[]): Tensor;
     maximum(a: Tensor, b: Tensor): Tensor;
     all(x: Tensor, axes: number[]): Tensor;
+    any(x: Tensor, axes: number[]): Tensor;
     squaredDifference(a: Tensor, b: Tensor): Tensor;
     ceil<T extends Tensor>(x: T): T;
     floor<T extends Tensor>(x: T): T;
@@ -102,21 +102,26 @@ export declare class MathBackendCPU implements KernelBackend {
     pad<T extends Tensor>(x: T, paddings: Array<[number, number]>, constantValue: number): T;
     transpose<T extends Tensor>(x: T, perm: number[]): T;
     gather<T extends Tensor>(x: T, indices: Tensor1D, axis: number): T;
-    private pool(x, convInfo, poolType);
+    batchToSpaceND<T extends Tensor>(x: T, blockShape: number[], crops: number[][]): T;
+    spaceToBatchND<T extends Tensor>(x: T, blockShape: number[], paddings: Array<[number, number]>): T;
+    private pool;
     maxPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
-    private maxPoolPositions(x, convInfo);
+    private maxPoolPositions;
     maxPoolBackprop(dy: Tensor4D, x: Tensor4D, y: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     avgPoolBackprop(dy: Tensor4D, x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
-    cast<T extends Tensor<types.Rank>>(x: T, dtype: DataType): T;
-    reshape<T extends Tensor<types.Rank>, R extends types.Rank>(x: T, shape: types.ShapeMap[R]): Tensor<R>;
+    cast<T extends Tensor>(x: T, dtype: DataType): T;
+    reshape<R extends Rank>(x: Tensor, shape: ShapeMap[R]): Tensor<R>;
     avgPool(x: Tensor4D, convInfo: Conv2DInfo): Tensor4D;
     resizeBilinear(x: Tensor4D, newHeight: number, newWidth: number, alignCorners: boolean): Tensor4D;
-    resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor<types.Rank.R4>;
+    resizeBilinearBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor<Rank.R4>;
     resizeNearestNeighbor(x: Tensor4D, newHeight: number, newWidth: number, alignCorners: boolean): Tensor4D;
+    resizeNearestNeighborBackprop(dy: Tensor4D, x: Tensor4D, alignCorners: boolean): Tensor<Rank.R4>;
     batchNormalization(x: Tensor4D, mean: Tensor4D | Tensor1D, variance: Tensor4D | Tensor1D, varianceEpsilon: number, scale?: Tensor4D | Tensor1D, offset?: Tensor4D | Tensor1D): Tensor4D;
     localResponseNormalization4D(x: Tensor4D, radius: number, bias: number, alpha: number, beta: number): Tensor4D;
+    LRNGrad(dy: Tensor4D, inputImage: Tensor4D, outputImage: Tensor4D, depthRadius: number, bias: number, alpha: number, beta: number): Tensor4D;
     multinomial(logits: Tensor2D, normalized: boolean, numSamples: number, seed: number): Tensor2D;
     oneHot(indices: Tensor1D, depth: number, onValue: number, offValue: number): Tensor2D;
-    private broadcastedBinaryOp(a, b, dtype, op);
+    nonMaxSuppression(boxes: Tensor2D, scores: Tensor1D, maxOutputSize: number, iouThreshold: number, scoreThreshold: number): Tensor1D;
+    private broadcastedBinaryOp;
     dispose(): void;
 }

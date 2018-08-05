@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -36,15 +36,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var environment_1 = require("../environment");
+var log_1 = require("../log");
+var array_ops_util = require("../ops/array_ops_util");
 var axis_util = require("../ops/axis_util");
-var ops = require("../ops/ops");
 var reduce_util = require("../ops/reduce_util");
 var segment_util = require("../ops/segment_util");
 var slice_util_1 = require("../ops/slice_util");
+var softmax_1 = require("../ops/softmax");
+var tensor_ops_1 = require("../ops/tensor_ops");
 var tensor_1 = require("../tensor");
-var types = require("../types");
+var types_1 = require("../types");
 var util = require("../util");
 var backend_util = require("./backend_util");
+var non_max_suppression_impl_1 = require("./non_max_suppression_impl");
+var topk_impl_1 = require("./topk_impl");
 var argminmax_gpu_1 = require("./webgl/argminmax_gpu");
 var avg_pool_backprop_gpu_1 = require("./webgl/avg_pool_backprop_gpu");
 var batchnorm_gpu_1 = require("./webgl/batchnorm_gpu");
@@ -63,8 +68,8 @@ var gather_gpu_1 = require("./webgl/gather_gpu");
 var gpgpu_context_1 = require("./webgl/gpgpu_context");
 var gpgpu_math = require("./webgl/gpgpu_math");
 var gpgpu_util = require("./webgl/gpgpu_util");
-var logical_gpu_1 = require("./webgl/logical_gpu");
 var lrn_gpu_1 = require("./webgl/lrn_gpu");
+var lrn_grad_gpu_1 = require("./webgl/lrn_grad_gpu");
 var max_pool_backprop_gpu_1 = require("./webgl/max_pool_backprop_gpu");
 var mulmat_gpu_1 = require("./webgl/mulmat_gpu");
 var multinomial_gpu_1 = require("./webgl/multinomial_gpu");
@@ -74,9 +79,11 @@ var pool_gpu_1 = require("./webgl/pool_gpu");
 var reduce_gpu_1 = require("./webgl/reduce_gpu");
 var resize_bilinear_backprop_gpu_1 = require("./webgl/resize_bilinear_backprop_gpu");
 var resize_bilinear_gpu_1 = require("./webgl/resize_bilinear_gpu");
+var resize_nearest_neighbor_backprop_gpu_1 = require("./webgl/resize_nearest_neighbor_backprop_gpu");
 var resize_nearest_neighbor_gpu_1 = require("./webgl/resize_nearest_neighbor_gpu");
 var reverse_gpu_1 = require("./webgl/reverse_gpu");
 var segment_gpu_1 = require("./webgl/segment_gpu");
+var select_gpu_1 = require("./webgl/select_gpu");
 var slice_gpu_1 = require("./webgl/slice_gpu");
 var strided_slice_gpu_1 = require("./webgl/strided_slice_gpu");
 var tex_util_1 = require("./webgl/tex_util");
@@ -86,6 +93,7 @@ var transpose_gpu_1 = require("./webgl/transpose_gpu");
 var unary_op = require("./webgl/unaryop_gpu");
 var unaryop_gpu_1 = require("./webgl/unaryop_gpu");
 var webgl_util = require("./webgl/webgl_util");
+var where_impl_1 = require("./where_impl");
 var BEFORE_PAGING_CONSTANT = 300;
 exports.SIZE_UPLOAD_UNIFORM = 32;
 var MathBackendWebGL = (function () {
@@ -135,10 +143,18 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.fromPixels = function (pixels, numChannels) {
         if (pixels == null) {
-            throw new Error('MathBackendWebGL.writePixels(): pixels can not be null');
+            throw new Error('pixels passed to tf.fromPixels() can not be null');
         }
         var texShape = [pixels.height, pixels.width];
         var outShape = [pixels.height, pixels.width, numChannels];
+        if (!(pixels instanceof HTMLVideoElement) &&
+            !(pixels instanceof HTMLImageElement) &&
+            !(pixels instanceof HTMLCanvasElement) &&
+            !(pixels instanceof ImageData)) {
+            throw new Error('pixels passed to tf.fromPixels() must be either an ' +
+                "HTMLVideoElement, HTMLImageElement, HTMLCanvasElement or " +
+                ("ImageData, but was " + pixels.constructor.name));
+        }
         if (pixels instanceof HTMLVideoElement) {
             if (this.fromPixelsCanvas == null) {
                 if (!environment_1.ENV.get('IS_BROWSER')) {
@@ -195,23 +211,7 @@ var MathBackendWebGL = (function () {
         if (shouldTimeProgram) {
             start = performance.now();
         }
-        var float32Values;
-        if (environment_1.ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
-            float32Values = this.gpgpu.downloadFloat32MatrixFromOutputTexture(texture, texShape[0], texShape[1]);
-        }
-        else {
-            var tmpTarget = tensor_1.Tensor.make(shape, {});
-            this.texData.get(tmpTarget.dataId).usage = tex_util_1.TextureUsage.DOWNLOAD;
-            var tmpInput = tensor_1.Tensor.make(shape, { dataId: dataId }, dtype);
-            var program = new encode_float_gpu_1.EncodeFloatProgram(shape);
-            var res = this.compileAndRun(program, [tmpInput], tmpTarget);
-            var tmpData = this.texData.get(tmpTarget.dataId);
-            float32Values =
-                this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
-            res.dispose();
-            tmpInput.dispose();
-            tmpTarget.dispose();
-        }
+        var float32Values = this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
         if (shouldTimeProgram) {
             this.downloadWaitMs += performance.now() - start;
         }
@@ -220,7 +220,7 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.read = function (dataId) {
         return __awaiter(this, void 0, void 0, function () {
-            var subscribers_1, texData, texture, values, texShape, float32Values, subscribers, vals;
+            var subscribers_1, texData, shape, texture, values, texShape, dtype, bufferOrTexture, vals, subscribers;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -230,28 +230,30 @@ var MathBackendWebGL = (function () {
                         }
                         this.throwIfNoData(dataId);
                         texData = this.texData.get(dataId);
-                        texture = texData.texture, values = texData.values, texShape = texData.texShape;
+                        shape = texData.shape, texture = texData.texture, values = texData.values, texShape = texData.texShape, dtype = texData.dtype;
                         if (values != null) {
                             this.cacheOnCPU(dataId);
                             return [2, values];
                         }
-                        if (!environment_1.ENV.get('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED')) return [3, 2];
-                        return [4, this.gpgpu.downloadMatrixFromTextureAsync(texture, texShape[0], texShape[1])];
-                    case 1:
-                        float32Values = _a.sent();
-                        this.cacheOnCPU(dataId, float32Values);
-                        return [2, texData.values];
-                    case 2:
-                        if (environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') === 0) {
-                            return [2, this.readSync(dataId)];
-                        }
                         this.pendingRead.set(dataId, []);
-                        return [4, this.gpgpu.runQuery(function () { })];
-                    case 3:
+                        if (!environment_1.ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED') &&
+                            environment_1.ENV.get('WEBGL_VERSION') === 2) {
+                            throw new Error("tensor.data() with WEBGL_DOWNLOAD_FLOAT_ENABLED=false and " +
+                                "WEBGL_VERSION=2 not yet supported.");
+                        }
+                        bufferOrTexture = this.gpgpu.maybeCreateBufferFromTexture(texture, texShape[0], texShape[1]);
+                        return [4, this.gpgpu.createAndWaitForFence()];
+                    case 1:
                         _a.sent();
+                        if (bufferOrTexture instanceof WebGLTexture) {
+                            vals = this.getValuesFromTexture(texture, dataId, dtype, texShape, shape);
+                        }
+                        else {
+                            vals = this.gpgpu.downloadFloat32MatrixFromBuffer(bufferOrTexture, texShape[0], texShape[1]);
+                        }
+                        this.cacheOnCPU(dataId, vals);
                         subscribers = this.pendingRead.get(dataId);
                         this.pendingRead.delete(dataId);
-                        vals = this.readSync(dataId);
                         subscribers.forEach(function (resolve) { return resolve(vals); });
                         if (this.pendingDisposal.has(dataId)) {
                             this.pendingDisposal.delete(dataId);
@@ -261,6 +263,22 @@ var MathBackendWebGL = (function () {
                 }
             });
         });
+    };
+    MathBackendWebGL.prototype.getValuesFromTexture = function (texture, dataId, dtype, texShape, shape) {
+        if (environment_1.ENV.get('WEBGL_DOWNLOAD_FLOAT_ENABLED')) {
+            return this.gpgpu.downloadFloat32MatrixFromOutputTexture(texture, texShape[0], texShape[1]);
+        }
+        var tmpTarget = tensor_1.Tensor.make(shape, {});
+        this.texData.get(tmpTarget.dataId).usage = tex_util_1.TextureUsage.DOWNLOAD;
+        var tmpInput = tensor_1.Tensor.make(shape, { dataId: dataId }, dtype);
+        var program = new encode_float_gpu_1.EncodeFloatProgram(shape);
+        var pageToCpu = false;
+        this.compileAndRun(program, [tmpInput], tmpTarget, null, pageToCpu);
+        var tmpData = this.texData.get(tmpTarget.dataId);
+        var vals = this.gpgpu.downloadByteEncodedFloatMatrixFromOutputTexture(tmpData.texture, tmpData.texShape[0], tmpData.texShape[1]);
+        tmpInput.dispose();
+        tmpTarget.dispose();
+        return vals;
     };
     MathBackendWebGL.prototype.time = function (f) {
         return __awaiter(this, void 0, void 0, function () {
@@ -327,7 +345,7 @@ var MathBackendWebGL = (function () {
             var timerQuery;
             return __generator(this, function (_a) {
                 if (environment_1.ENV.get('WEBGL_DISJOINT_QUERY_TIMER_EXTENSION_VERSION') > 0) {
-                    return [2, this.gpgpu.pollQueryTime(query)];
+                    return [2, this.gpgpu.waitForQueryAndGetTime(query)];
                 }
                 timerQuery = query;
                 return [2, timerQuery.endMs - timerQuery.startMs];
@@ -368,7 +386,7 @@ var MathBackendWebGL = (function () {
     MathBackendWebGL.prototype.stridedSlice = function (x, begin, end, strides, beginMask, endMask) {
         var _a = slice_util_1.getStridedSlicedInfo(x.shape, begin, end, strides, beginMask, endMask), beginIndex = _a[0], size = _a[1];
         if (size.some(function (axis) { return axis === 0; })) {
-            return ops.tensor([], size);
+            return tensor_ops_1.tensor([], size);
         }
         var program = new strided_slice_gpu_1.StridedSliceProgram(beginIndex, strides, size);
         return this.compileAndRun(program, [x]);
@@ -391,7 +409,7 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.multiply = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.MUL, a.shape, b.shape);
-        var output = this.makeOutputArray(program.outputShape, types.upcastType(a.dtype, b.dtype));
+        var output = this.makeOutputArray(program.outputShape, types_1.upcastType(a.dtype, b.dtype));
         return this.compileAndRun(program, [a, b], output);
     };
     MathBackendWebGL.prototype.batchNormalization = function (x, mean, variance, varianceEpsilon, scale, offset) {
@@ -413,6 +431,10 @@ var MathBackendWebGL = (function () {
         var program = new lrn_gpu_1.LRNProgram(x.shape, radius, bias, alpha, beta);
         return this.compileAndRun(program, [x]);
     };
+    MathBackendWebGL.prototype.LRNGrad = function (dy, inputImage, outputImage, depthRadius, bias, alpha, beta) {
+        var program = new lrn_grad_gpu_1.LRNGradProgram(inputImage.shape, depthRadius, bias, alpha, beta);
+        return this.compileAndRun(program, [inputImage, outputImage, dy]);
+    };
     MathBackendWebGL.prototype.tile = function (x, reps) {
         var program = new tile_gpu_1.TileProgram(x.shape, reps);
         return this.compileAndRun(program, [x]);
@@ -428,6 +450,35 @@ var MathBackendWebGL = (function () {
     MathBackendWebGL.prototype.gather = function (x, indices, axis) {
         var program = new gather_gpu_1.GatherProgram(x.shape, indices.size, axis);
         return this.compileAndRun(program, [x, indices]);
+    };
+    MathBackendWebGL.prototype.batchToSpaceND = function (x, blockShape, crops) {
+        util.assert(x.rank <= 4, 'batchToSpaceND for rank > 4 with a WebGL backend not implemented yet');
+        var prod = blockShape.reduce(function (a, b) { return a * b; });
+        var reshaped = array_ops_util.getReshaped(x.shape, blockShape, prod);
+        var permuted = array_ops_util.getPermuted(reshaped.length, blockShape.length);
+        var reshapedPermuted = array_ops_util.getReshapedPermuted(x.shape, blockShape, prod);
+        var sliceBeginCoords = array_ops_util.getSliceBeginCoords(crops, blockShape.length);
+        var sliceSize = array_ops_util.getSliceSize(reshapedPermuted, crops, blockShape.length);
+        return x.reshape(reshaped)
+            .transpose(permuted)
+            .reshape(reshapedPermuted)
+            .slice(sliceBeginCoords, sliceSize);
+    };
+    MathBackendWebGL.prototype.spaceToBatchND = function (x, blockShape, paddings) {
+        util.assert(x.rank <= 4, 'spaceToBatchND for rank > 4 with a WebGL backend not implemented yet');
+        var prod = blockShape.reduce(function (a, b) { return a * b; });
+        var completePaddings = [[0, 0]];
+        completePaddings.push.apply(completePaddings, paddings);
+        for (var i = 1 + blockShape.length; i < x.shape.length; ++i) {
+            completePaddings.push([0, 0]);
+        }
+        var paddedX = x.pad(completePaddings);
+        var reshapedPaddedShape = array_ops_util.getReshaped(paddedX.shape, blockShape, prod, false);
+        var permutedReshapedPaddedPermutation = array_ops_util.getPermuted(reshapedPaddedShape.length, blockShape.length, false);
+        var flattenShape = array_ops_util.getReshapedPermuted(paddedX.shape, blockShape, prod, false);
+        return paddedX.reshape(reshapedPaddedShape)
+            .transpose(permutedReshapedPaddedPermutation)
+            .reshape(flattenShape);
     };
     MathBackendWebGL.prototype.reduce = function (x, reduceType, dtype) {
         var batchSize = x.shape[0];
@@ -471,7 +522,7 @@ var MathBackendWebGL = (function () {
         var _a = axis_util.computeOutAndReduceShapes(x.shape, axes), outShape = _a[0], reduceShape = _a[1];
         var inSize = util.sizeFromShape(reduceShape);
         var a2D = x.as2D(-1, inSize);
-        var outputDType = types.sumOutType(x.dtype);
+        var outputDType = types_1.sumOutType(x.dtype);
         return this.reduce(a2D, 'sum', outputDType).reshape(outShape);
     };
     MathBackendWebGL.prototype.unsortedSegmentSum = function (x, segmentIds, numSegments) {
@@ -485,7 +536,7 @@ var MathBackendWebGL = (function () {
         var outShape = segment_util.computeOutShape(permutedX.shape, axis, numSegments);
         var inSize = util.sizeFromShape([permutedX.shape[axis]]);
         var a2D = permutedX.as2D(-1, inSize);
-        var outputDType = types.sumOutType(x.dtype);
+        var outputDType = types_1.sumOutType(x.dtype);
         var result = this.segOpCompute(a2D, 'unsortedSegmentSum', segmentIds, outputDType, numSegments)
             .reshape(outShape);
         if (permutation != null) {
@@ -505,7 +556,7 @@ var MathBackendWebGL = (function () {
         if (output.shape[1] === numSegments) {
             return output;
         }
-        segmentIds = ops.range(0, numSegments).tile([inSize / windowSize]);
+        segmentIds = tensor_ops_1.range(0, numSegments).tile([inSize / windowSize]);
         return this.segOpCompute(output, segOpType, segmentIds, dtype, numSegments);
     };
     MathBackendWebGL.prototype.argMin = function (x, axis) {
@@ -576,16 +627,20 @@ var MathBackendWebGL = (function () {
         var output = this.makeOutputArray(program.outputShape, 'bool');
         return this.compileAndRun(program, [a, b], output);
     };
-    MathBackendWebGL.prototype.where = function (condition, a, b, dtype) {
-        var program = new logical_gpu_1.WhereProgram(condition.rank, a.shape, a.rank);
-        var output = this.makeOutputArray(program.outputShape, dtype);
+    MathBackendWebGL.prototype.select = function (condition, a, b) {
+        var program = new select_gpu_1.SelectProgram(condition.rank, a.shape, a.rank);
+        var output = this.makeOutputArray(program.outputShape, types_1.upcastType(a.dtype, b.dtype));
         return this.compileAndRun(program, [condition, a, b], output);
     };
-    MathBackendWebGL.prototype.topKValues = function (x, k) {
-        throw new Error('topKValues GPU not yet implemented!');
+    MathBackendWebGL.prototype.where = function (condition) {
+        log_1.warn('tf.where() in webgl locks the UI thread. ' +
+            'Call tf.whereAsync() instead');
+        var condVals = condition.dataSync();
+        return where_impl_1.whereImpl(condition.shape, condVals);
     };
-    MathBackendWebGL.prototype.topKIndices = function (x, k) {
-        throw new Error('topKIndices GPU not yet implemented!');
+    MathBackendWebGL.prototype.topk = function (x, k, sorted) {
+        var xVals = x.dataSync();
+        return topk_impl_1.topkImpl(xVals, x.shape, x.dtype, k, sorted);
     };
     MathBackendWebGL.prototype.min = function (x, axes) {
         axis_util.assertAxesAreInnerMostDims('min', axes, x.rank);
@@ -600,7 +655,8 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.mod = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.MOD, a.shape, b.shape);
-        return this.compileAndRun(program, [a, b]);
+        var customSetup = program.getCustomSetupFunc();
+        return this.compileAndRun(program, [a, b], null, customSetup);
     };
     MathBackendWebGL.prototype.max = function (x, axes) {
         axis_util.assertAxesAreInnerMostDims('max', axes, x.rank);
@@ -619,6 +675,13 @@ var MathBackendWebGL = (function () {
         var inSize = util.sizeFromShape(reduceShape);
         var a2D = x.as2D(-1, inSize);
         return this.reduce(a2D, 'all', a2D.dtype).reshape(outShape);
+    };
+    MathBackendWebGL.prototype.any = function (x, axes) {
+        axis_util.assertAxesAreInnerMostDims('any', axes, x.rank);
+        var _a = axis_util.computeOutAndReduceShapes(x.shape, axes), outShape = _a[0], reduceShape = _a[1];
+        var inSize = util.sizeFromShape(reduceShape);
+        var a2D = x.as2D(-1, inSize);
+        return this.reduce(a2D, 'any', a2D.dtype).reshape(outShape);
     };
     MathBackendWebGL.prototype.squaredDifference = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.SQUARED_DIFFERENCE, a.shape, b.shape);
@@ -640,18 +703,26 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.add = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.ADD, a.shape, b.shape);
-        var output = this.makeOutputArray(program.outputShape, types.upcastType(a.dtype, b.dtype));
+        var output = this.makeOutputArray(program.outputShape, types_1.upcastType(a.dtype, b.dtype));
         return this.compileAndRun(program, [a, b], output);
+    };
+    MathBackendWebGL.prototype.addN = function (tensors) {
+        var res = tensors[0];
+        for (var i = 1; i < tensors.length; i++) {
+            res = this.add(res, tensors[i]);
+        }
+        return res;
     };
     MathBackendWebGL.prototype.subtract = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.SUB, a.shape, b.shape);
-        var output = this.makeOutputArray(program.outputShape, types.upcastType(a.dtype, b.dtype));
+        var output = this.makeOutputArray(program.outputShape, types_1.upcastType(a.dtype, b.dtype));
         return this.compileAndRun(program, [a, b], output);
     };
     MathBackendWebGL.prototype.pow = function (a, b) {
         var program = new binaryop_gpu_1.BinaryOpProgram(binaryop_gpu.POW, a.shape, b.shape);
-        var output = this.makeOutputArray(program.outputShape, types.upcastType(a.dtype, b.dtype));
-        return this.compileAndRun(program, [a, b], output);
+        var customSetup = program.getCustomSetupFunc();
+        var output = this.makeOutputArray(program.outputShape, types_1.upcastType(a.dtype, b.dtype));
+        return this.compileAndRun(program, [a, b], output, customSetup);
     };
     MathBackendWebGL.prototype.ceil = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.CEIL);
@@ -679,7 +750,8 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.log = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.LOG);
-        return this.compileAndRun(program, [x]);
+        var customSetup = program.getCustomSetupFunc();
+        return this.compileAndRun(program, [x], null, customSetup);
     };
     MathBackendWebGL.prototype.log1p = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.LOG1P);
@@ -784,11 +856,13 @@ var MathBackendWebGL = (function () {
     };
     MathBackendWebGL.prototype.acosh = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.ACOSH);
-        return this.compileAndRun(program, [x]);
+        var customSetup = program.getCustomSetupFunc();
+        return this.compileAndRun(program, [x], null, customSetup);
     };
     MathBackendWebGL.prototype.atanh = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.ATANH);
-        return this.compileAndRun(program, [x]);
+        var customSetup = program.getCustomSetupFunc();
+        return this.compileAndRun(program, [x], null, customSetup);
     };
     MathBackendWebGL.prototype.erf = function (x) {
         var program = new unaryop_gpu_1.UnaryOpProgram(x.shape, unary_op.ERF);
@@ -865,8 +939,12 @@ var MathBackendWebGL = (function () {
         var program = new resize_nearest_neighbor_gpu_1.ResizeNearestNeighborProgram(x.shape, newHeight, newWidth, alignCorners);
         return this.compileAndRun(program, [x]);
     };
+    MathBackendWebGL.prototype.resizeNearestNeighborBackprop = function (dy, x, alignCorners) {
+        var program = new resize_nearest_neighbor_backprop_gpu_1.ResizeNearestNeigborBackpropProgram(dy, x, alignCorners);
+        return this.compileAndRun(program, [dy]);
+    };
     MathBackendWebGL.prototype.multinomial = function (logits, normalized, numSamples, seed) {
-        var probs = normalized ? logits : ops.softmax(logits);
+        var probs = normalized ? logits : softmax_1.softmax(logits);
         var batchSize = probs.shape[0];
         var numOutcomes = probs.shape[1];
         var program = new multinomial_gpu_1.MultinomialProgram(batchSize, numOutcomes, numSamples);
@@ -878,11 +956,19 @@ var MathBackendWebGL = (function () {
         var program = new onehot_gpu_1.OneHotProgram(indices.size, depth, onValue, offValue);
         return this.compileAndRun(program, [indices]);
     };
+    MathBackendWebGL.prototype.nonMaxSuppression = function (boxes, scores, maxOutputSize, iouThreshold, scoreThreshold) {
+        log_1.warn('tf.nonMaxSuppression() in webgl locks the UI thread. ' +
+            'Call tf.nonMaxSuppressionAsync() instead');
+        var boxesVals = boxes.dataSync();
+        var scoresVals = scores.dataSync();
+        return non_max_suppression_impl_1.nonMaxSuppressionImpl(boxesVals, scoresVals, maxOutputSize, iouThreshold, scoreThreshold);
+    };
     MathBackendWebGL.prototype.makeOutputArray = function (shape, dtype) {
         return tensor_1.Tensor.make(shape, {}, dtype);
     };
-    MathBackendWebGL.prototype.compileAndRun = function (program, inputs, output, customSetup) {
+    MathBackendWebGL.prototype.compileAndRun = function (program, inputs, output, customSetup, pageToCpu) {
         var _this = this;
+        if (pageToCpu === void 0) { pageToCpu = true; }
         if (output == null) {
             output = this.makeOutputArray(program.outputShape, inputs[0].dtype);
         }
@@ -910,9 +996,9 @@ var MathBackendWebGL = (function () {
             query = this.startTimer();
         }
         gpgpu_math.runProgram(binary, inputsData, outputData, customSetup);
-        if (this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
+        if (pageToCpu && this.numBytesInGPU > this.NUM_BYTES_BEFORE_PAGING) {
             var numBytesToPage = this.numBytesInGPU - this.NUM_BYTES_BEFORE_PAGING;
-            while (numBytesToPage > 0) {
+            while (numBytesToPage > 0 && this.lruDataGPU.length > 0) {
                 var dataId = this.lruDataGPU.shift();
                 var _a = this.texData.get(dataId), shape = _a.shape, dtype = _a.dtype;
                 numBytesToPage -= this.computeBytes(shape, dtype);
@@ -963,8 +1049,11 @@ var MathBackendWebGL = (function () {
         var texData = this.texData.get(dataId);
         var shape = texData.shape, values = texData.values, texture = texData.texture, dtype = texData.dtype, usage = texData.usage;
         if (texture != null) {
-            this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
-            this.lruDataGPU.push(dataId);
+            var index = this.lruDataGPU.indexOf(dataId);
+            if (index >= 0) {
+                this.lruDataGPU.splice(this.lruDataGPU.indexOf(dataId), 1);
+                this.lruDataGPU.push(dataId);
+            }
             return;
         }
         var shouldTimeProgram = this.activeTimers != null;
@@ -1019,7 +1108,7 @@ var MathBackendWebGL = (function () {
 }());
 exports.MathBackendWebGL = MathBackendWebGL;
 if (environment_1.ENV.get('IS_BROWSER')) {
-    environment_1.ENV.registerBackend('webgl', function () { return new MathBackendWebGL(); }, 2);
+    environment_1.ENV.registerBackend('webgl', function () { return new MathBackendWebGL(); }, 2, tensor_1.setTensorTracker);
 }
 function float32ToTypedArray(a, dtype) {
     if (dtype === 'float32') {

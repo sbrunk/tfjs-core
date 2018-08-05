@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('maxPool', test_util_1.ALL_ENVS, function () {
     it('x=[1,1,1] f=[1,1] s=1 [0] => [0]', function () {
         var x = tf.tensor3d([0], [1, 1, 1]);
@@ -60,6 +60,11 @@ jasmine_util_1.describeWithFlags('maxPool', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.maxPool({}, 2, 1, 'valid'); })
             .toThrowError(/Argument 'x' passed to 'maxPool' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var x = [[[0]]];
+        var result = tf.maxPool(x, 1, 1, 0);
+        test_util_1.expectArraysClose(result, [0]);
     });
 });
 jasmine_util_1.describeWithFlags('maxPoolBackprop', test_util_1.ALL_ENVS, function () {
@@ -294,6 +299,11 @@ jasmine_util_1.describeWithFlags('avgPool', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.avgPool({}, 2, 1, 'valid'); })
             .toThrowError(/Argument 'x' passed to 'avgPool' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [[[0]]];
+        var result = tf.avgPool(a, 1, 1, 0);
+        test_util_1.expectArraysClose(result, [0]);
     });
 });
 //# sourceMappingURL=pool_test.js.map

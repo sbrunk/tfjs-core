@@ -1,5 +1,5 @@
 import { Tensor } from './tensor';
-import { NamedTensorMap } from './types';
+import { NamedTensorMap } from './tensor_types';
 export interface TapeNode {
     id: number;
     name: string;

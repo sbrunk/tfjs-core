@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
+var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 var indexed_db_1 = require("./indexed_db");
 var local_storage_1 = require("./local_storage");
 var router_registry_1 = require("./router_registry");
-describe('IORouterRegistry', function () {
+jasmine_util_1.describeWithFlags('IORouterRegistry', test_util_1.BROWSER_ENVS, function () {
     var localStorageRouter = function (url) {
         var scheme = 'localstorage://';
         if (url.startsWith(scheme)) {

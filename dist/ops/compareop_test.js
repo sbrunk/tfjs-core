@@ -189,6 +189,11 @@ jasmine_util_1.describeWithFlags('equal', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.equal(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'equal' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        test_util_1.expectArraysClose(tf.equal(a, b), [0, 0, 1]);
+    });
 });
 jasmine_util_1.describeWithFlags('equalStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - int32', function () {
@@ -353,6 +358,11 @@ jasmine_util_1.describeWithFlags('equalStrict', test_util_1.ALL_ENVS, function (
         var a = tf.tensor4d([1.1, NaN, 1.1, 0.1], [2, 2, 1, 1], 'float32');
         var b = tf.tensor4d([0.1, 1.1, 1.1, NaN], [2, 2, 1, 1], 'float32');
         test_util_1.expectArraysClose(tf.equalStrict(a, b), [0, 0, 1, 0]);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        test_util_1.expectArraysClose(tf.equalStrict(a, b), [0, 0, 1]);
     });
 });
 jasmine_util_1.describeWithFlags('notEqual', test_util_1.ALL_ENVS, function () {
@@ -548,6 +558,11 @@ jasmine_util_1.describeWithFlags('notEqual', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.notEqual(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'notEqual' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = tf.tensor1d([1, 4, 5], 'int32');
+        var b = tf.tensor1d([2, 3, 5], 'int32');
+        test_util_1.expectArraysClose(tf.notEqual(a, b), [1, 1, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('notEqualStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - int32', function () {
@@ -718,6 +733,11 @@ jasmine_util_1.describeWithFlags('notEqualStrict', test_util_1.ALL_ENVS, functio
         var a = tf.tensor4d([1.1, NaN, 1.1, 0.1], [2, 2, 1, 1], 'float32');
         var b = tf.tensor4d([0.1, 1.1, 1.1, NaN], [2, 2, 1, 1], 'float32');
         test_util_1.expectArraysClose(tf.notEqualStrict(a, b), [1, 1, 0, 1]);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        test_util_1.expectArraysClose(tf.notEqualStrict(a, b), [1, 1, 0]);
     });
 });
 jasmine_util_1.describeWithFlags('less', test_util_1.ALL_ENVS, function () {
@@ -934,6 +954,13 @@ jasmine_util_1.describeWithFlags('less', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.less(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'less' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.less(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [1, 0, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('lessStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - strict version throws when a and b are different shape', function () {
@@ -962,6 +989,13 @@ jasmine_util_1.describeWithFlags('lessStrict', test_util_1.ALL_ENVS, function ()
         var b = tf.tensor4d([[[[1.1, 2.1]], [[3.1, 4.1]]], [[[5.1, 6.1]], [[7.1, 8.1]]]], [2, 2, 1, 2], 'float32');
         expect(function () { return tf.lessStrict(a, b); }).toThrowError();
         expect(function () { return tf.lessStrict(b, a); }).toThrowError();
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.lessStrict(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [1, 0, 0]);
     });
 });
 jasmine_util_1.describeWithFlags('lessEqual', test_util_1.ALL_ENVS, function () {
@@ -1178,6 +1212,13 @@ jasmine_util_1.describeWithFlags('lessEqual', test_util_1.ALL_ENVS, function () 
         expect(function () { return tf.lessEqual(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'lessEqual' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.lessEqual(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [1, 0, 1]);
+    });
 });
 jasmine_util_1.describeWithFlags('lessEqualStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - strict version throws when a and b are different shape', function () {
@@ -1206,6 +1247,13 @@ jasmine_util_1.describeWithFlags('lessEqualStrict', test_util_1.ALL_ENVS, functi
         var b = tf.tensor4d([[[[1.1, 2.1]], [[3.1, 4.1]]], [[[5.1, 6.1]], [[7.1, 8.1]]]], [2, 2, 1, 2], 'float32');
         expect(function () { return tf.lessEqualStrict(a, b); }).toThrowError();
         expect(function () { return tf.lessEqualStrict(b, a); }).toThrowError();
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.lessEqualStrict(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [1, 0, 1]);
     });
 });
 jasmine_util_1.describeWithFlags('greater', test_util_1.ALL_ENVS, function () {
@@ -1422,6 +1470,13 @@ jasmine_util_1.describeWithFlags('greater', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.greater(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'greater' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.greater(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [0, 1, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('greaterStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - strict version throws when a and b are different shape', function () {
@@ -1450,6 +1505,13 @@ jasmine_util_1.describeWithFlags('greaterStrict', test_util_1.ALL_ENVS, function
         var b = tf.tensor4d([[[[1.1, 2.1]], [[3.1, 4.1]]], [[[5.1, 6.1]], [[7.1, 8.1]]]], [2, 2, 1, 2], 'float32');
         expect(function () { return tf.greaterStrict(a, b); }).toThrowError();
         expect(function () { return tf.greaterStrict(b, a); }).toThrowError();
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.greaterStrict(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [0, 1, 0]);
     });
 });
 jasmine_util_1.describeWithFlags('greaterEqual', test_util_1.ALL_ENVS, function () {
@@ -1666,6 +1728,13 @@ jasmine_util_1.describeWithFlags('greaterEqual', test_util_1.ALL_ENVS, function 
         expect(function () { return tf.greaterEqual(tf.scalar(1), {}); })
             .toThrowError(/Argument 'b' passed to 'greaterEqual' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.greaterEqual(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [0, 1, 1]);
+    });
 });
 jasmine_util_1.describeWithFlags('greaterEqualStrict', test_util_1.ALL_ENVS, function () {
     it('Tensor1D - strict version throws when a and b are different shape', function () {
@@ -1694,6 +1763,13 @@ jasmine_util_1.describeWithFlags('greaterEqualStrict', test_util_1.ALL_ENVS, fun
         var b = tf.tensor4d([[[[1.1, 2.1]], [[3.1, 4.1]]], [[[5.1, 6.1]], [[7.1, 8.1]]]], [2, 2, 1, 2], 'float32');
         expect(function () { return tf.greaterEqualStrict(a, b); }).toThrowError();
         expect(function () { return tf.greaterEqualStrict(b, a); }).toThrowError();
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [1, 4, 5];
+        var b = [2, 3, 5];
+        var res = tf.greaterEqualStrict(a, b);
+        expect(res.dtype).toBe('bool');
+        test_util_1.expectArraysClose(res, [0, 1, 1]);
     });
 });
 //# sourceMappingURL=compareop_test.js.map

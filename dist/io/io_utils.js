@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var array_ops_1 = require("../ops/array_ops");
+var tensor_ops_1 = require("../ops/tensor_ops");
 var util_1 = require("../util");
 var types_1 = require("./types");
 function encodeWeights(tensors) {
@@ -78,15 +78,13 @@ function decodeWeights(buffer, specs) {
         var size = util_1.sizeFromShape(shape);
         var value = void 0;
         if (dtype === 'float32') {
-            value = array_ops_1.ArrayOps.tensor(new Float32Array(buffer, offset, size), shape, 'float32');
+            value = tensor_ops_1.tensor(new Float32Array(buffer, offset, size), shape, 'float32');
         }
         else if (dtype === 'int32') {
-            value =
-                array_ops_1.ArrayOps.tensor(new Int32Array(buffer, offset, size), shape, 'int32');
+            value = tensor_ops_1.tensor(new Int32Array(buffer, offset, size), shape, 'int32');
         }
         else if (dtype === 'bool') {
-            value =
-                array_ops_1.ArrayOps.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
+            value = tensor_ops_1.tensor(new Uint8Array(buffer, offset, size), shape, 'bool');
         }
         else {
             throw new Error("Unsupported dtype in weight '" + name_2 + "': " + dtype);
@@ -102,35 +100,47 @@ function concatenateTypedArrays(xs) {
         throw new Error("Invalid input value: " + JSON.stringify(xs));
     }
     var totalByteLength = 0;
+    var normalizedXs = [];
     xs.forEach(function (x) {
-        if (x instanceof Float32Array || x instanceof Int32Array) {
-            totalByteLength += x.buffer.byteLength;
-        }
-        else if (x instanceof Uint8Array) {
-            totalByteLength += x.buffer.byteLength;
-        }
-        else {
+        totalByteLength += x.byteLength;
+        normalizedXs.push(x.byteLength === x.buffer.byteLength ? x :
+            new x.constructor(x));
+        if (!(x instanceof Float32Array || x instanceof Int32Array ||
+            x instanceof Uint8Array)) {
             throw new Error("Unsupported TypedArray subtype: " + x.constructor.name);
         }
     });
     var y = new Uint8Array(totalByteLength);
     var offset = 0;
-    xs.forEach(function (x) {
+    normalizedXs.forEach(function (x) {
         y.set(new Uint8Array(x.buffer), offset);
-        offset += x.buffer.byteLength;
+        offset += x.byteLength;
     });
     return y.buffer;
 }
 exports.concatenateTypedArrays = concatenateTypedArrays;
+var useNodeBuffer = typeof Buffer !== 'undefined' &&
+    (typeof Blob === 'undefined' || typeof atob === 'undefined' ||
+        typeof btoa === 'undefined');
 function stringByteLength(str) {
+    if (useNodeBuffer) {
+        return Buffer.byteLength(str);
+    }
     return new Blob([str]).size;
 }
 exports.stringByteLength = stringByteLength;
 function arrayBufferToBase64String(buffer) {
+    if (useNodeBuffer) {
+        return Buffer.from(buffer).toString('base64');
+    }
     return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
 }
 exports.arrayBufferToBase64String = arrayBufferToBase64String;
 function base64StringToArrayBuffer(str) {
+    if (useNodeBuffer) {
+        var buf = Buffer.from(str, 'base64');
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    }
     var s = atob(str);
     var buffer = new Uint8Array(s.length);
     for (var i = 0; i < s.length; ++i) {

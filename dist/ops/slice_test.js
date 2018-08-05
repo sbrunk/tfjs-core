@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tf = require("../index");
-var test_util_1 = require("../test_util");
 var jasmine_util_1 = require("../jasmine_util");
+var test_util_1 = require("../test_util");
 jasmine_util_1.describeWithFlags('slice1d', test_util_1.ALL_ENVS, function () {
     it('slices 1x1 into 1x1 (effectively a copy)', function () {
         var a = tf.tensor1d([5]);
@@ -28,6 +28,12 @@ jasmine_util_1.describeWithFlags('slice1d', test_util_1.ALL_ENVS, function () {
         var da = tf.grad(function (x) { return tf.slice1d(a, 1, 2); })(a, dy);
         expect(da.shape).toEqual([5]);
         test_util_1.expectArraysClose(da, [0, 10, 100, 0, 0]);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [5];
+        var result = tf.slice1d(a, 0, 1);
+        expect(result.shape).toEqual([1]);
+        test_util_1.expectNumbersClose(result.get(0), 5);
     });
 });
 jasmine_util_1.describeWithFlags('slice2d', test_util_1.ALL_ENVS, function () {
@@ -63,48 +69,65 @@ jasmine_util_1.describeWithFlags('slice2d', test_util_1.ALL_ENVS, function () {
         expect(da.shape).toEqual([2, 3]);
         test_util_1.expectArraysClose(da, [0, 20, 0, 0, 50, 0]);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[0]];
+        var b = tf.slice2d(a, [0, 0], [1, 1]);
+        expect(b.shape).toEqual([1, 1]);
+    });
 });
 jasmine_util_1.describeWithFlags('slice3d', test_util_1.ALL_ENVS, function () {
     it('slices 1x1x1 into shape 1x1x1 (effectively a copy)', function () {
         var a = tf.tensor3d([[[5]]], [1, 1, 1]);
-        var result = a.slice([0, 0, 0], [1, 1, 1]);
+        var result = tf.slice3d(a, [0, 0, 0], [1, 1, 1]);
         expect(result.shape).toEqual([1, 1, 1]);
         test_util_1.expectArraysClose(result, [5]);
     });
     it('slices 2x2x2 array into 1x2x2 starting at [1, 0, 0]', function () {
         var a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
-        var result = a.slice([1, 0, 0], [1, 2, 2]);
+        var result = tf.slice3d(a, [1, 0, 0], [1, 2, 2]);
         expect(result.shape).toEqual([1, 2, 2]);
         test_util_1.expectArraysClose(result, [5, 6, 7, 8]);
     });
     it('slices 2x2x2 array into 2x1x1 starting at [0, 1, 1]', function () {
         var a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
-        var result = a.slice([0, 1, 1], [2, 1, 1]);
+        var result = tf.slice3d(a, [0, 1, 1], [2, 1, 1]);
         expect(result.shape).toEqual([2, 1, 1]);
         test_util_1.expectArraysClose(result, [4, 8]);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [[[5]]];
+        var result = tf.slice3d(a, [0, 0, 0], [1, 1, 1]);
+        expect(result.shape).toEqual([1, 1, 1]);
+        test_util_1.expectArraysClose(result, [5]);
     });
 });
 jasmine_util_1.describeWithFlags('slice4d', test_util_1.ALL_ENVS, function () {
     it('slices 1x1x1x1 into shape 1x1x1x1 (effectively a copy)', function () {
         var a = tf.tensor4d([[[[5]]]], [1, 1, 1, 1]);
-        var result = a.slice([0, 0, 0, 0], [1, 1, 1, 1]);
+        var result = tf.slice4d(a, [0, 0, 0, 0], [1, 1, 1, 1]);
         expect(result.shape).toEqual([1, 1, 1, 1]);
         test_util_1.expectArraysClose(result, [5]);
     });
     it('slices 2x2x2x2 array into 1x2x2x2 starting at [1, 0, 0, 0]', function () {
         var a = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88], [2, 2, 2, 2]);
-        var result = a.slice([1, 0, 0, 0], [1, 2, 2, 2]);
+        var result = tf.slice4d(a, [1, 0, 0, 0], [1, 2, 2, 2]);
         expect(result.shape).toEqual([1, 2, 2, 2]);
         test_util_1.expectArraysClose(result, [11, 22, 33, 44, 55, 66, 77, 88]);
     });
     it('slices 2x2x2x2 array into 2x1x1x1 starting at [0, 1, 1, 1]', function () {
         var a = tf.tensor4d([1, 2, 3, 4, 5, 6, 7, 8, 11, 22, 33, 44, 55, 66, 77, 88], [2, 2, 2, 2]);
-        var result = a.slice([0, 1, 1, 1], [2, 1, 1, 1]);
+        var result = tf.slice4d(a, [0, 1, 1, 1], [2, 1, 1, 1]);
         expect(result.shape).toEqual([2, 1, 1, 1]);
         test_util_1.expectArraysClose(result, [8, 88]);
     });
+    it('accepts a tensor-like object', function () {
+        var a = [[[[5]]]];
+        var result = tf.slice4d(a, [0, 0, 0, 0], [1, 1, 1, 1]);
+        expect(result.shape).toEqual([1, 1, 1, 1]);
+        test_util_1.expectArraysClose(result, [5]);
+    });
 });
-jasmine_util_1.describeWithFlags('slice ergonomics', test_util_1.CPU_ENVS, function () {
+jasmine_util_1.describeWithFlags('slice ergonomics', test_util_1.ALL_ENVS, function () {
     it('slices 2x2x2 array into 2x1x1 no size', function () {
         var a = tf.tensor3d([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]);
         var result = a.slice([0, 1, 1]);
@@ -138,6 +161,12 @@ jasmine_util_1.describeWithFlags('slice ergonomics', test_util_1.CPU_ENVS, funct
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.slice({}, 0, 0); })
             .toThrowError(/Argument 'x' passed to 'slice' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var a = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
+        var result = tf.slice(a, [0, 1, 1]);
+        expect(result.shape).toEqual([2, 1, 1]);
+        test_util_1.expectArraysClose(result, [4, 8]);
     });
 });
 //# sourceMappingURL=slice_test.js.map

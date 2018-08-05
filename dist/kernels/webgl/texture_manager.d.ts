@@ -10,7 +10,7 @@ export declare class TextureManager {
     constructor(gpgpu: GPGPUContext);
     acquireTexture(shapeRC: [number, number], usage: TextureUsage): WebGLTexture;
     releaseTexture(texture: WebGLTexture, shape: [number, number], logicalTexType: TextureUsage): void;
-    private log();
+    private log;
     getNumUsedTextures(): number;
     getNumFreeTextures(): number;
     dispose(): void;

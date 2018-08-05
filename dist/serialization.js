@@ -24,7 +24,8 @@ var SerializationMap = (function () {
         return SerializationMap.instance;
     };
     SerializationMap.register = function (cls) {
-        this.getMap().classNameMap[cls.className] = [cls, cls.fromConfig];
+        SerializationMap.getMap().classNameMap[cls.className] =
+            [cls, cls.fromConfig];
     };
     return SerializationMap;
 }());

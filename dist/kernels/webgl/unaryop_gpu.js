@@ -6,8 +6,20 @@ var UnaryOpProgram = (function () {
     function UnaryOpProgram(aShape, opSnippet) {
         this.variableNames = ['A'];
         this.outputShape = aShape;
-        this.userCode = "\n      float unaryOperation(float x) {\n        " + opSnippet + "\n      }\n\n      void main() {\n        float x = getAAtOutCoords();\n        float y = unaryOperation(x);\n\n        setOutput(y);\n      }\n    ";
+        this.userCode = "\n      uniform float NAN;\n      float unaryOperation(float x) {\n        " + opSnippet + "\n      }\n\n      void main() {\n        float x = getAAtOutCoords();\n        float y = unaryOperation(x);\n\n        setOutput(y);\n      }\n    ";
     }
+    UnaryOpProgram.prototype.getCustomSetupFunc = function () {
+        var _this = this;
+        return function (gpgpu, webGLProgram) {
+            if (_this.startLoc == null) {
+                _this.startLoc = gpgpu.getUniformLocationNoThrow(webGLProgram, 'NAN');
+                if (_this.startLoc == null) {
+                    return;
+                }
+            }
+            gpgpu.gl.uniform1f(_this.startLoc, NaN);
+        };
+    };
     return UnaryOpProgram;
 }());
 exports.UnaryOpProgram = UnaryOpProgram;
@@ -28,7 +40,7 @@ exports.SIGN = "\n  if (isNaN(x)) { return 0.0; }\n  return sign(x);\n";
 exports.ROUND = "\n  // OpenGL ES does not support round function.\n  // The algorithm is based on banker's rounding.\n  float base = floor(x);\n  if ((x - base) < 0.5) {\n    return floor(x);\n  } else if ((x - base) > 0.5) {\n    return ceil(x);\n  } else {\n    if (mod(base, 2.0) == 0.0) {\n      return base;\n    } else {\n      return base + 1.0;\n    }\n  }\n";
 exports.EXP = "return exp(x);";
 exports.EXPM1 = "return exp(x) - 1.0;";
-exports.LOG = "return log(x);";
+exports.LOG = "if (x < 0.0) return NAN;\n  return log(x);";
 exports.LOG1P = "return log(1.0 + x);";
 exports.SQRT = "return sqrt(x);";
 exports.RSQRT = "return inversesqrt(x);";
@@ -44,8 +56,8 @@ exports.SINH = "\n  float e2x = exp(x);\n  return (e2x - 1.0 / e2x) / 2.0;\n";
 exports.COSH = "\n  float e2x = exp(-x);\n  return (e2x + 1.0 / e2x) / 2.0;\n";
 exports.TANH = "\n  float e2x = exp(-2.0 * abs(x));\n  return sign(x) * (1.0 - e2x) / (1.0 + e2x);\n";
 exports.ASINH = "return log(x + sqrt(x * x + 1.0));";
-exports.ACOSH = "return log(x + sqrt(x * x - 1.0));";
-exports.ATANH = "return (log(1.0 + x) - log(1.0 - x)) / 2.0;";
+exports.ACOSH = CHECK_NAN_SNIPPET + "\n  if (x < 1.0) return NAN;\n  return log(x + sqrt(x * x - 1.0));";
+exports.ATANH = CHECK_NAN_SNIPPET + "\n  if ((x < -1.0) || (x > 1.0)) return NAN;\n  return (log(1.0 + x) - log(1.0 - x)) / 2.0;";
 exports.ERF = "\n  // Error function is calculated approximately with elementary function.\n  // See \"Handbook of Mathematical Functions with Formulas,\n  // Graphs, and Mathematical Tables\", Abramowitz and Stegun.\n  float p = " + erf_util.ERF_P + ";\n  float a1 = " + erf_util.ERF_A1 + ";\n  float a2 = " + erf_util.ERF_A2 + ";\n  float a3 = " + erf_util.ERF_A3 + ";\n  float a4 = " + erf_util.ERF_A4 + ";\n  float a5 = " + erf_util.ERF_A5 + ";\n\n  float t = 1.0 / (1.0 + p * x);\n  return 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);\n";
 exports.SQUARE = "return x * x;";
 exports.RECIPROCAL = "return 1.0 / x;";

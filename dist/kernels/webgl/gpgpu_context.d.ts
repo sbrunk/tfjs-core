@@ -1,4 +1,10 @@
-import { WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension, WebGLLoseContextExtension, WebGLQuery } from './webgl_types';
+/// <reference types="webgl2" />
+/// <reference types="webgl-ext" />
+import { WebGL1DisjointQueryTimerExtension, WebGL2DisjointQueryTimerExtension } from './webgl_types';
+export interface FenceContext {
+    query: WebGLQuery | WebGLSync;
+    isFencePassed(): boolean;
+}
 export declare class GPGPUContext {
     gl: WebGLRenderingContext;
     textureFloatExtension: {};
@@ -6,7 +12,7 @@ export declare class GPGPUContext {
     colorBufferFloatExtension: {};
     colorBufferHalfFloatExtension: {};
     getBufferSubDataAsyncExtension: {};
-    loseContextExtension: WebGLLoseContextExtension;
+    loseContextExtension: WebGLLoseContext;
     disjointQueryTimerExtension: WebGL2DisjointQueryTimerExtension | WebGL1DisjointQueryTimerExtension;
     vertexBuffer: WebGLBuffer;
     indexBuffer: WebGLBuffer;
@@ -30,7 +36,10 @@ export declare class GPGPUContext {
     uploadMatrixToPackedTexture(texture: WebGLTexture, rows: number, columns: number, matrix: Float32Array): void;
     downloadFloat32MatrixFromOutputTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
     downloadByteEncodedFloatMatrixFromOutputTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
-    downloadMatrixFromTextureAsync(texture: WebGLTexture, rows: number, columns: number): Promise<Float32Array>;
+    downloadFloat32MatrixFromBuffer(buffer: WebGLBuffer, rows: number, columns: number): Float32Array;
+    maybeCreateBufferFromTexture(texture: WebGLTexture, rows: number, columns: number): WebGLBuffer | WebGLTexture;
+    createAndWaitForFence(): Promise<void>;
+    private createFence;
     downloadMatrixFromPackedTexture(texture: WebGLTexture, rows: number, columns: number): Float32Array;
     private vertexAttrsAreBound;
     createProgram(fragmentShaderSource: string): WebGLProgram;
@@ -47,25 +56,24 @@ export declare class GPGPUContext {
     debugValidate(): void;
     executeProgram(): void;
     blockUntilAllProgramsCompleted(): void;
-    private getQueryTimerExtension();
-    private getQueryTimerExtensionWebGL2();
-    private getQueryTimerExtensionWebGL1();
-    runQuery(queryFn: () => void): Promise<number>;
+    private getQueryTimerExtension;
+    private getQueryTimerExtensionWebGL2;
+    private getQueryTimerExtensionWebGL1;
     beginQuery(): WebGLQuery;
     endQuery(): void;
-    private isQueryAvailable(query, queryTimerVersion);
-    pollQueryTime(query: WebGLQuery): Promise<number>;
+    waitForQueryAndGetTime(query: WebGLQuery): Promise<number>;
+    private getQueryTime;
+    private isQueryAvailable;
+    pollFence(fenceContext: FenceContext): Promise<void>;
     private itemsToPoll;
     pollItems(): void;
-    private addItemToPoll(isDoneFn, resolveFn);
-    private getQueryTime(query, queryTimerVersion);
-    private downloadMatrixDriverSetup(texture);
-    private downloadMatrixDriverTeardown();
-    private downloadMatrixDriver(texture, downloadAndDecode);
-    private downloadMatrixDriverAsync(texture, downloadAndDecode);
-    private setOutputMatrixTextureDriver(outputMatrixTextureMaybePacked, width, height);
-    private setOutputMatrixWriteRegionDriver(x, y, width, height);
-    private throwIfDisposed();
-    private throwIfNoProgram();
+    private addItemToPoll;
+    private bindTextureToFrameBuffer;
+    private unbindTextureToFrameBuffer;
+    private downloadMatrixDriver;
+    private setOutputMatrixTextureDriver;
+    private setOutputMatrixWriteRegionDriver;
+    private throwIfDisposed;
+    private throwIfNoProgram;
 }
 export declare function binSearchLastTrue(arr: Array<() => boolean>): number;

@@ -84,6 +84,29 @@ jasmine_util_1.describeWithFlags('batchNormalization4D', test_util_1.ALL_ENVS, f
                     Math.sqrt(variance.get(1) + varianceEpsilon)
         ]);
     });
+    it('accepts a tensor-like object', function () {
+        var x = [[[[2, 4]]], [[[9, 23]]]];
+        var mean = [1, 2];
+        var variance = [2, 3];
+        var offset = [3, 4];
+        var scale = [4, 5];
+        var varianceEpsilon = .001;
+        var result = tf.batchNormalization4d(x, mean, variance, varianceEpsilon, scale, offset);
+        test_util_1.expectArraysClose(result, [
+            offset[0] +
+                (x[0][0][0][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[0][0][0][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon),
+            offset[0] +
+                (x[1][0][0][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[1][0][0][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon)
+        ]);
+    });
     it('simple batchnorm4D gradients, 2x1x1x2', function () {
         var x = tf.tensor4d([2, 4, 9, 23], [2, 1, 1, 2]);
         var mean = tf.tensor1d([1, 2]);
@@ -202,6 +225,29 @@ jasmine_util_1.describeWithFlags('batchNormalization3D', test_util_1.ALL_ENVS, f
             offset.get(1) +
                 (x.get(1, 0, 1) - mean.get(1)) * scale.get(1) /
                     Math.sqrt(variance.get(1) + varianceEpsilon)
+        ]);
+    });
+    it('accepts a tensor-like object', function () {
+        var x = [[[2, 4]], [[9, 23]]];
+        var mean = [1, 2];
+        var variance = [2, 3];
+        var offset = [3, 4];
+        var scale = [4, 5];
+        var varianceEpsilon = .001;
+        var result = tf.batchNormalization3d(x, mean, variance, varianceEpsilon, scale, offset);
+        test_util_1.expectArraysClose(result, [
+            offset[0] +
+                (x[0][0][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[0][0][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon),
+            offset[0] +
+                (x[1][0][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[1][0][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon)
         ]);
     });
     it('batchnorm3D, x,mean,var,offset,scale are all 3D', function () {
@@ -459,6 +505,29 @@ jasmine_util_1.describeWithFlags('batchNormalization2D', test_util_1.ALL_ENVS, f
         var e = /Argument 'offset' passed to 'batchNormalization' must be a Tensor/;
         expect(function () { return tf.batchNormalization(x, mean, variance, epsilon, scale, {}); })
             .toThrowError(e);
+    });
+    it('accepts a tensor-like object', function () {
+        var x = [[2, 4], [9, 23]];
+        var mean = [1, 2];
+        var variance = [2, 3];
+        var offset = [3, 4];
+        var scale = [4, 5];
+        var varianceEpsilon = .001;
+        var result = tf.batchNormalization2d(x, mean, variance, varianceEpsilon, scale, offset);
+        test_util_1.expectArraysClose(result, [
+            offset[0] +
+                (x[0][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[0][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon),
+            offset[0] +
+                (x[1][0] - mean[0]) * scale[0] /
+                    Math.sqrt(variance[0] + varianceEpsilon),
+            offset[1] +
+                (x[1][1] - mean[1]) * scale[1] /
+                    Math.sqrt(variance[1] + varianceEpsilon)
+        ]);
     });
 });
 //# sourceMappingURL=batchnorm_test.js.map

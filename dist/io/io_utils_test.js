@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -92,6 +92,62 @@ describe('concatenateTypedArrays', function () {
         expect(new Uint8Array(buffer, 0, 4)).toEqual(x);
         expect(new Int32Array(buffer, 4, 4)).toEqual(y);
         expect(new Float32Array(buffer, 20, 4)).toEqual(z);
+    });
+    it('Concatenate Float32Arrays from SubArrays', function () {
+        var x1 = new Float32Array([1.1, 2.2, 3.3]);
+        var x2 = new Float32Array([-1.1, -2.2, -3.3]);
+        var xConcatenated = io_utils_1.concatenateTypedArrays([x1, x2]);
+        var y1 = new Float32Array(xConcatenated, 0, 3);
+        var y2 = new Float32Array(xConcatenated, 3 * 4, 3);
+        expect(y1.buffer.byteLength).toEqual(6 * 4);
+        expect(y2.buffer.byteLength).toEqual(6 * 4);
+        var yConcatenated = io_utils_1.concatenateTypedArrays([y1, y2]);
+        expect(yConcatenated.byteLength).toEqual(6 * 4);
+        expect(new Float32Array(yConcatenated, 0, 3)).toEqual(x1);
+        expect(new Float32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
+    });
+    it('Concatenate Int32Array from SubArrays', function () {
+        var x1 = new Int32Array([11, 22, 33]);
+        var x2 = new Int32Array([-11, -22, -33]);
+        var xConcatenated = io_utils_1.concatenateTypedArrays([x1, x2]);
+        var y1 = new Int32Array(xConcatenated, 0, 3);
+        var y2 = new Int32Array(xConcatenated, 3 * 4, 3);
+        expect(y1.buffer.byteLength).toEqual(6 * 4);
+        expect(y2.buffer.byteLength).toEqual(6 * 4);
+        var yConcatenated = io_utils_1.concatenateTypedArrays([y1, y2]);
+        expect(yConcatenated.byteLength).toEqual(6 * 4);
+        expect(new Int32Array(yConcatenated, 0, 3)).toEqual(x1);
+        expect(new Int32Array(yConcatenated, 3 * 4, 3)).toEqual(x2);
+    });
+    it('Concatenate Uint8Array from SubArrays', function () {
+        var x1 = new Uint8Array([11, 22, 33]);
+        var x2 = new Uint8Array([44, 55, 66]);
+        var xConcatenated = io_utils_1.concatenateTypedArrays([x1, x2]);
+        var y1 = new Uint8Array(xConcatenated, 0, 3);
+        var y2 = new Uint8Array(xConcatenated, 3, 3);
+        expect(y1.buffer.byteLength).toEqual(6);
+        expect(y2.buffer.byteLength).toEqual(6);
+        var yConcatenated = io_utils_1.concatenateTypedArrays([y1, y2]);
+        expect(yConcatenated.byteLength).toEqual(6);
+        expect(new Uint8Array(yConcatenated, 0, 3)).toEqual(x1);
+        expect(new Uint8Array(yConcatenated, 3, 3)).toEqual(x2);
+    });
+    it('Concatenate mixed TypedArrays from SubArrays', function () {
+        var x1 = new Uint8Array([11, 22, 33, 44]);
+        var x2 = new Int32Array([-44, -55, -66]);
+        var x3 = new Float32Array([1.1, 2.2, 3.3]);
+        var xConcatenated = io_utils_1.concatenateTypedArrays([x1, x2, x3]);
+        var y1 = new Uint8Array(xConcatenated, 0, 4);
+        var y2 = new Int32Array(xConcatenated, 4, 3);
+        var y3 = new Float32Array(xConcatenated, 4 + 3 * 4, 3);
+        expect(y1.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+        expect(y2.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+        expect(y3.buffer.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+        var yConcatenated = io_utils_1.concatenateTypedArrays([y1, y2, y3]);
+        expect(yConcatenated.byteLength).toEqual(4 + 3 * 4 + 3 * 4);
+        expect(new Uint8Array(yConcatenated, 0, 4)).toEqual(x1);
+        expect(new Int32Array(yConcatenated, 4, 3)).toEqual(x2);
+        expect(new Float32Array(yConcatenated, 4 + 3 * 4, 3)).toEqual(x3);
     });
     it('null and undefined inputs', function () {
         expect(function () { return io_utils_1.concatenateTypedArrays(null); }).toThrow();

@@ -100,5 +100,11 @@ jasmine_util_1.describeWithFlags('transpose', test_util_1.ALL_ENVS, function () 
         expect(function () { return tf.transpose({}); })
             .toThrowError(/Argument 'x' passed to 'transpose' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var t = [[1, 11, 2, 22], [3, 33, 4, 44]];
+        var res = tf.transpose(t, [1, 0]);
+        expect(res.shape).toEqual([4, 2]);
+        test_util_1.expectArraysClose(res, [1, 3, 11, 33, 2, 4, 22, 44]);
+    });
 });
 //# sourceMappingURL=transpose_test.js.map

@@ -73,6 +73,10 @@ jasmine_util_1.describeWithFlags('relu', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.relu({}); })
             .toThrowError(/Argument 'x' passed to 'relu' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.relu([1, -2, 0, 3, -0.1]);
+        test_util_1.expectArraysClose(result, [1, 0, 0, 3, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('abs', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -122,6 +126,10 @@ jasmine_util_1.describeWithFlags('abs', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.abs({}); })
             .toThrowError(/Argument 'x' passed to 'abs' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.abs([1, -2, 0, 3, -0.1]);
+        test_util_1.expectArraysClose(result, [1, 2, 0, 3, 0.1]);
     });
 });
 jasmine_util_1.describeWithFlags('step', test_util_1.ALL_ENVS, function () {
@@ -174,6 +182,10 @@ jasmine_util_1.describeWithFlags('step', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.step({}); })
             .toThrowError(/Argument 'x' passed to 'step' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.step([1, -2, -.01, 3, -0.1]);
+        test_util_1.expectArraysClose(result, [1, 0, 0, 1, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('neg', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -215,6 +227,10 @@ jasmine_util_1.describeWithFlags('neg', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.neg({}); })
             .toThrowError(/Argument 'x' passed to 'neg' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.neg([1, -3, 2, 7, -4]);
+        test_util_1.expectArraysClose(result, [-1, 3, -2, -7, 4]);
+    });
 });
 jasmine_util_1.describeWithFlags('sigmoid', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -255,6 +271,15 @@ jasmine_util_1.describeWithFlags('sigmoid', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.sigmoid({}); })
             .toThrowError(/Argument 'x' passed to 'sigmoid' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.sigmoid(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = 1 / (1 + Math.exp(-values[i]));
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('logSigmoid', test_util_1.ALL_ENVS, function () {
@@ -338,6 +363,11 @@ jasmine_util_1.describeWithFlags('logSigmoid', test_util_1.ALL_ENVS, function ()
         expect(function () { return tf.logSigmoid({}); })
             .toThrowError(/Argument 'x' passed to 'logSigmoid' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.logSigmoid(-2);
+        var expected = [Math.log(1 / (1 + Math.exp(2)))];
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('softplus', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -420,6 +450,11 @@ jasmine_util_1.describeWithFlags('softplus', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.softplus({}); })
             .toThrowError(/Argument 'x' passed to 'softplus' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.softplus(-2);
+        var expected = [Math.log((1 + Math.exp(-2)))];
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('sqrt', test_util_1.ALL_ENVS, function () {
     it('sqrt', function () {
@@ -467,6 +502,11 @@ jasmine_util_1.describeWithFlags('sqrt', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.sqrt({}); })
             .toThrowError(/Argument 'x' passed to 'sqrt' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.sqrt([2, 4]);
+        test_util_1.expectNumbersClose(r.get(0), Math.sqrt(2));
+        test_util_1.expectNumbersClose(r.get(1), Math.sqrt(4));
+    });
 });
 jasmine_util_1.describeWithFlags('rsqrt', test_util_1.ALL_ENVS, function () {
     it('rsqrt', function () {
@@ -513,6 +553,11 @@ jasmine_util_1.describeWithFlags('rsqrt', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.rsqrt({}); })
             .toThrowError(/Argument 'x' passed to 'rsqrt' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.rsqrt([2, 4]);
+        test_util_1.expectNumbersClose(r.get(0), 1 / Math.sqrt(2));
+        test_util_1.expectNumbersClose(r.get(1), 1 / Math.sqrt(4));
     });
 });
 jasmine_util_1.describeWithFlags('square', test_util_1.ALL_ENVS, function () {
@@ -588,6 +633,10 @@ jasmine_util_1.describeWithFlags('square', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.square({}); })
             .toThrowError(/Argument 'x' passed to 'square' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.square([2, 4, Math.sqrt(2)]);
+        test_util_1.expectArraysClose(r, [4, 16, 2]);
+    });
 });
 jasmine_util_1.describeWithFlags('reciprocal', test_util_1.ALL_ENVS, function () {
     it('1D array', function () {
@@ -640,6 +689,10 @@ jasmine_util_1.describeWithFlags('reciprocal', test_util_1.ALL_ENVS, function ()
         expect(function () { return tf.reciprocal({}); })
             .toThrowError(/Argument 'x' passed to 'reciprocal' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.reciprocal([2, 3, 0, NaN]);
+        test_util_1.expectArraysClose(r, [1 / 2, 1 / 3, Infinity, NaN]);
+    });
 });
 jasmine_util_1.describeWithFlags('log', test_util_1.ALL_ENVS, function () {
     it('log', function () {
@@ -690,6 +743,11 @@ jasmine_util_1.describeWithFlags('log', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.log({}); })
             .toThrowError(/Argument 'x' passed to 'log' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.log([1, 2]);
+        test_util_1.expectNumbersClose(r.get(0), Math.log(1));
+        test_util_1.expectNumbersClose(r.get(1), Math.log(2));
+    });
 });
 jasmine_util_1.describeWithFlags('log1p', test_util_1.ALL_ENVS, function () {
     it('log1p', function () {
@@ -730,6 +788,11 @@ jasmine_util_1.describeWithFlags('log1p', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.log1p({}); })
             .toThrowError(/Argument 'x' passed to 'log1p' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.log1p([1, 2]);
+        test_util_1.expectNumbersClose(r.get(0), Math.log1p(1));
+        test_util_1.expectNumbersClose(r.get(1), Math.log1p(2));
     });
 });
 jasmine_util_1.describeWithFlags('ceil', test_util_1.ALL_ENVS, function () {
@@ -773,6 +836,12 @@ jasmine_util_1.describeWithFlags('ceil', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.ceil({}); })
             .toThrowError(/Argument 'x' passed to 'ceil' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.ceil([1.5, 2.1, -1.4]);
+        test_util_1.expectNumbersClose(r.get(0), 2);
+        test_util_1.expectNumbersClose(r.get(1), 3);
+        test_util_1.expectNumbersClose(r.get(2), -1);
+    });
 });
 jasmine_util_1.describeWithFlags('floor', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -814,6 +883,12 @@ jasmine_util_1.describeWithFlags('floor', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.floor({}); })
             .toThrowError(/Argument 'x' passed to 'floor' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.floor([1.5, 2.1, -1.4]);
+        test_util_1.expectNumbersClose(r.get(0), 1);
+        test_util_1.expectNumbersClose(r.get(1), 2);
+        test_util_1.expectNumbersClose(r.get(2), -2);
     });
 });
 jasmine_util_1.describeWithFlags('sign', test_util_1.ALL_ENVS, function () {
@@ -858,6 +933,13 @@ jasmine_util_1.describeWithFlags('sign', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.sign({}); })
             .toThrowError(/Argument 'x' passed to 'sign' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.sign([1.5, 0, NaN, -1.4]);
+        test_util_1.expectNumbersClose(r.get(0), 1);
+        test_util_1.expectNumbersClose(r.get(1), 0);
+        test_util_1.expectNumbersClose(r.get(2), 0);
+        test_util_1.expectNumbersClose(r.get(3), -1);
+    });
 });
 jasmine_util_1.describeWithFlags('exp', test_util_1.ALL_ENVS, function () {
     it('exp', function () {
@@ -900,6 +982,12 @@ jasmine_util_1.describeWithFlags('exp', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.exp({}); })
             .toThrowError(/Argument 'x' passed to 'exp' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var r = tf.exp([1, 2, 0]);
+        test_util_1.expectNumbersClose(r.get(0), Math.exp(1));
+        test_util_1.expectNumbersClose(r.get(1), Math.exp(2));
+        test_util_1.expectNumbersClose(r.get(2), 1);
+    });
 });
 jasmine_util_1.describeWithFlags('expm1', test_util_1.ALL_ENVS, function () {
     it('expm1', function () {
@@ -941,6 +1029,12 @@ jasmine_util_1.describeWithFlags('expm1', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.expm1({}); })
             .toThrowError(/Argument 'x' passed to 'expm1' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.expm1([1, 2, 0]);
+        test_util_1.expectNumbersClose(r.get(0), Math.expm1(1));
+        test_util_1.expectNumbersClose(r.get(1), Math.expm1(2));
+        test_util_1.expectNumbersClose(r.get(2), Math.expm1(0));
     });
 });
 jasmine_util_1.describeWithFlags('sin', test_util_1.ALL_ENVS, function () {
@@ -986,6 +1080,15 @@ jasmine_util_1.describeWithFlags('sin', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.sin({}); })
             .toThrowError(/Argument 'x' passed to 'sin' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.sin(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.sin(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('cos', test_util_1.ALL_ENVS, function () {
@@ -1037,6 +1140,15 @@ jasmine_util_1.describeWithFlags('cos', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.cos({}); })
             .toThrowError(/Argument 'x' passed to 'cos' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.cos(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.cos(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('tan', test_util_1.ALL_ENVS, function () {
@@ -1095,6 +1207,15 @@ jasmine_util_1.describeWithFlags('tan', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.tan({}); })
             .toThrowError(/Argument 'x' passed to 'tan' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.tan(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.tan(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('asin', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1151,6 +1272,15 @@ jasmine_util_1.describeWithFlags('asin', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.asin({}); })
             .toThrowError(/Argument 'x' passed to 'asin' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [.1, -3, 2, 7, -4];
+        var result = tf.asin(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.asin(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('acos', test_util_1.ALL_ENVS, function () {
@@ -1210,6 +1340,15 @@ jasmine_util_1.describeWithFlags('acos', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.acos({}); })
             .toThrowError(/Argument 'x' passed to 'acos' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [.1, -3, 2, 7, -4];
+        var result = tf.acos(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.acos(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('atan', test_util_1.ALL_ENVS, function () {
@@ -1277,6 +1416,15 @@ jasmine_util_1.describeWithFlags('atan', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.atan({}); })
             .toThrowError(/Argument 'x' passed to 'atan' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.atan(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.atan(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('sinh', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1334,6 +1482,15 @@ jasmine_util_1.describeWithFlags('sinh', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.sinh({}); })
             .toThrowError(/Argument 'x' passed to 'sinh' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, -1, -4];
+        var result = tf.sinh(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.sinh(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('cosh', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1390,6 +1547,15 @@ jasmine_util_1.describeWithFlags('cosh', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.cosh({}); })
             .toThrowError(/Argument 'x' passed to 'cosh' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, -1, -4];
+        var result = tf.cosh(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.cosh(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('tanh', test_util_1.ALL_ENVS, function () {
@@ -1450,6 +1616,15 @@ jasmine_util_1.describeWithFlags('tanh', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.tanh({}); })
             .toThrowError(/Argument 'x' passed to 'tanh' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.tanh(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = util.tanh(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('leakyRelu', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1499,6 +1674,11 @@ jasmine_util_1.describeWithFlags('leakyRelu', test_util_1.ALL_ENVS, function () 
         expect(function () { return tf.leakyRelu({}); })
             .toThrowError(/Argument 'x' passed to 'leakyRelu' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.leakyRelu([0, 1, -2]);
+        expect(result.shape).toEqual([3]);
+        test_util_1.expectArraysClose(result, [0, 1, -0.4]);
+    });
 });
 jasmine_util_1.describeWithFlags('elu', test_util_1.ALL_ENVS, function () {
     it('calculate elu', function () {
@@ -1524,6 +1704,11 @@ jasmine_util_1.describeWithFlags('elu', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.elu({}); })
             .toThrowError(/Argument 'x' passed to 'elu' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.elu([1, -1, 0]);
+        expect(result.shape).toEqual(result.shape);
+        test_util_1.expectArraysClose(result, [1, -0.6321, 0]);
     });
 });
 jasmine_util_1.describeWithFlags('selu', test_util_1.ALL_ENVS, function () {
@@ -1601,6 +1786,11 @@ jasmine_util_1.describeWithFlags('selu', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.selu({}); })
             .toThrowError(/Argument 'x' passed to 'selu' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.selu([1, -1, 0]);
+        expect(result.shape).toEqual([3]);
+        test_util_1.expectArraysClose(result, [1.0507, -1.1113, 0]);
+    });
 });
 jasmine_util_1.describeWithFlags('clip', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1660,6 +1850,12 @@ jasmine_util_1.describeWithFlags('clip', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.clipByValue({}, 0, 1); })
             .toThrowError(/Argument 'x' passed to 'clipByValue' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var min = -1;
+        var max = 50;
+        var result = tf.clipByValue([3, -1, 0, 100, -7, 2], min, max);
+        test_util_1.expectArraysClose(result, [3, -1, 0, 50, -1, 2]);
+    });
 });
 jasmine_util_1.describeWithFlags('round', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1703,6 +1899,10 @@ jasmine_util_1.describeWithFlags('round', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.round({}); })
             .toThrowError(/Argument 'x' passed to 'round' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var r = tf.round([0.9, 2.5, 2.3, 1.5, -4.5]);
+        test_util_1.expectArraysClose(r, [1, 2, 2, 2, -4]);
     });
 });
 jasmine_util_1.describeWithFlags('asinh', test_util_1.ALL_ENVS, function () {
@@ -1776,6 +1976,15 @@ jasmine_util_1.describeWithFlags('asinh', test_util_1.ALL_ENVS, function () {
     it('throws when passed a non-tensor', function () {
         expect(function () { return tf.asinh({}); })
             .toThrowError(/Argument 'x' passed to 'asinh' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var values = [1, -3, 2, 7, -4];
+        var result = tf.asinh(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.asinh(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
     });
 });
 jasmine_util_1.describeWithFlags('acosh', test_util_1.ALL_ENVS, function () {
@@ -1856,6 +2065,15 @@ jasmine_util_1.describeWithFlags('acosh', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.acosh({}); })
             .toThrowError(/Argument 'x' passed to 'acosh' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var values = [2, 3, 4, 5, 6];
+        var result = tf.acosh(values);
+        var expected = [];
+        for (var i = 0; i < values.length; i++) {
+            expected[i] = Math.acosh(values[i]);
+        }
+        test_util_1.expectArraysClose(result, expected);
+    });
 });
 jasmine_util_1.describeWithFlags('atanh', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -1935,6 +2153,10 @@ jasmine_util_1.describeWithFlags('atanh', test_util_1.ALL_ENVS, function () {
         expect(function () { return tf.atanh({}); })
             .toThrowError(/Argument 'x' passed to 'atanh' must be a Tensor/);
     });
+    it('accepts a tensor-like object', function () {
+        var result = tf.atanh(0.2);
+        test_util_1.expectNumbersClose(result.get(), Math.atanh(0.2));
+    });
 });
 jasmine_util_1.describeWithFlags('erf', test_util_1.ALL_ENVS, function () {
     it('basic', function () {
@@ -2005,6 +2227,14 @@ jasmine_util_1.describeWithFlags('erf', test_util_1.ALL_ENVS, function () {
         expect(gradients.shape).toEqual(a.shape);
         expect(gradients.dtype).toEqual('float32');
         test_util_1.expectArraysClose(gradients, expected);
+    });
+    it('throws when passed a non-tensor', function () {
+        expect(function () { return tf.erf({}); })
+            .toThrowError(/Argument 'x' passed to 'erf' must be a Tensor/);
+    });
+    it('accepts a tensor-like object', function () {
+        var result = tf.erf(1);
+        test_util_1.expectNumbersClose(result.get(), 0.8427008);
     });
 });
 //# sourceMappingURL=unary_ops_test.js.map
