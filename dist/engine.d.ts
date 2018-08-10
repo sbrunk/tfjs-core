@@ -47,7 +47,8 @@ export declare class Engine implements TensorManager {
     tidy<T extends TensorContainer>(nameOrFn: string | ScopeFn<T>, fn?: ScopeFn<T>, gradMode?: boolean): T;
     private scopedRun;
     runKernel<T extends Tensor | Tensor[], I extends NamedTensorMap>(forwardFunc: ForwardFunc<T>, inputs: I, backwardsFunc?: (dy: T, saved: Tensor[]) => {
-        [P in keyof I]: () => I[P];
+        //[P in keyof I]: () => I[P];
+        string: () => string;
     }): T;
     registerTensor(a: Tensor | Variable): void;
     registerVariable(v: Variable): void;

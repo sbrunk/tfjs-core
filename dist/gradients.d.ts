@@ -17,4 +17,4 @@ declare function variableGrads(f: () => Scalar, varList?: Variable[]): {
     grads: NamedTensorMap;
 };
 declare function customGrad<T extends Tensor>(f: CustomGradientFunc<T>): (...args: Tensor[]) => T;
-export { gradScope, customGrad, variableGrads, valueAndGrad, valueAndGrads, grad, grads, };
+export { gradScope, customGrad, variableGrads, valueAndGrad, valueAndGrads, grad, grads };
